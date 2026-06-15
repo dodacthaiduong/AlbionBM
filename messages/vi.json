@@ -1,0 +1,57 @@
+{
+  "nav": {
+    "home": "Trang chủ",
+    "about": "Giới thiệu",
+    "tours": "Tour du lịch",
+    "services": "Dịch vụ du lịch",
+    "events": "Tổ chức sự kiện",
+    "careers": "Tuyển dụng",
+    "contact": "Liên hệ",
+    "openMenu": "Mở menu",
+    "closeMenu": "Đóng menu",
+    "langVi": "Tiếng Việt",
+    "langEn": "English",
+    "ariaPrimary": "Điều hướng chính",
+    "logoAria": "FORCO - Trang chủ"
+  },
+  "home": {
+    "scrollMore": "Cuộn xuống để xem thêm"
+  },
+  "admin": {
+    "title": "Đăng nhập quản trị",
+    "subtitle": "Forco Travel & Event — Quản trị",
+    "username": "Tên đăng nhập",
+    "password": "Mật khẩu",
+    "submit": "Đăng nhập",
+    "submitting": "Đang đăng nhập...",
+    "testAccount": "Tài khoản test:",
+    "backHome": "← Quay lại trang chủ",
+    "errorInvalid": "Đăng nhập thất bại",
+    "errorNetwork": "Không thể kết nối máy chủ"
+  },
+  "setting": {
+    "title": "Cài đặt trang chủ",
+    "logout": "Đăng xuất",
+    "save": "Lưu nội dung",
+    "saving": "Đang lưu...",
+    "intro": "Mỗi khối hero hiển thị trên trang chủ với ảnh nền, tiêu đề và mô tả riêng. Sắp xếp lại thứ tự hoặc thêm / xoá khối tuỳ ý.",
+    "blockIndex": "Khối #{number}",
+    "moveUp": "Di chuyển lên",
+    "moveDown": "Di chuyển xuống",
+    "remove": "Xoá khối",
+    "pickImage": "Chọn ảnh",
+    "noFile": "Chưa chọn file",
+    "upload": "Upload ảnh",
+    "uploading": "Đang upload...",
+    "addBlock": "+ Thêm khối hero",
+    "fieldTitle": "Tiêu đề",
+    "fieldSubtitle": "Mô tả",
+    "titlePlaceholder": "Tiêu đề hiển thị",
+    "subtitlePlaceholder": "Mô tả ngắn",
+    "toastImageUpdated": "Đã cập nhật ảnh nền",
+    "toastSaved": "Đã lưu nội dung",
+    "toastUploadFail": "Upload thất bại",
+    "toastSaveFail": "Lưu thất bại",
+    "toastNetwork": "Không thể kết nối máy chủ"
+  }
+}

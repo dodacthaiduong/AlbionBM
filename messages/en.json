@@ -1,0 +1,57 @@
+{
+  "nav": {
+    "home": "Home",
+    "about": "About",
+    "tours": "Tours",
+    "services": "Services",
+    "events": "Events",
+    "careers": "Careers",
+    "contact": "Contact",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "langVi": "Vietnamese",
+    "langEn": "English",
+    "ariaPrimary": "Primary navigation",
+    "logoAria": "FORCO - Home"
+  },
+  "home": {
+    "scrollMore": "Scroll for more"
+  },
+  "admin": {
+    "title": "Admin Sign In",
+    "subtitle": "Forco Travel & Event — Admin",
+    "username": "Username",
+    "password": "Password",
+    "submit": "Sign in",
+    "submitting": "Signing in...",
+    "testAccount": "Test account:",
+    "backHome": "← Back to home",
+    "errorInvalid": "Sign in failed",
+    "errorNetwork": "Cannot reach server"
+  },
+  "setting": {
+    "title": "Homepage Settings",
+    "logout": "Sign out",
+    "save": "Save content",
+    "saving": "Saving...",
+    "intro": "Each hero block shows on the homepage with its own background, title, and description. Reorder, add, or remove blocks freely.",
+    "blockIndex": "Block #{number}",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "remove": "Remove block",
+    "pickImage": "Choose image",
+    "noFile": "No file selected",
+    "upload": "Upload image",
+    "uploading": "Uploading...",
+    "addBlock": "+ Add hero block",
+    "fieldTitle": "Title",
+    "fieldSubtitle": "Description",
+    "titlePlaceholder": "Display title",
+    "subtitlePlaceholder": "Short description",
+    "toastImageUpdated": "Background updated",
+    "toastSaved": "Content saved",
+    "toastUploadFail": "Upload failed",
+    "toastSaveFail": "Save failed",
+    "toastNetwork": "Cannot reach server"
+  }
+}
