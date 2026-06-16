@@ -1,23 +1,64 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, type CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { routing, type Locale } from "@/i18n/routing";
+import type { LogoStyle, Settings } from "@/lib/settings-types";
 
-type NavKey = "home" | "about" | "tours" | "services" | "events" | "careers" | "contact";
+function getLogoBoxStyle(style: LogoStyle): CSSProperties {
+  const base: CSSProperties = {
+    width: style.width,
+    height: style.height,
+  };
+  if (style.mode === "full") return base;
+  if (style.mode === "cover") {
+    return { ...base, borderRadius: style.radius, overflow: "hidden" };
+  }
+  return {
+    ...base,
+    borderRadius: style.radius,
+    background: style.bg ?? "transparent",
+    padding: style.padding,
+    overflow: "hidden",
+  };
+}
 
-const NAV_ITEMS: ReadonlyArray<{ key: NavKey; href: "/" | "/gioi-thieu" | "/tour-du-lich" | "/dich-vu-du-lich" | "/to-chuc-su-kien" | "/tuyen-dung" | "/lien-he" }> = [
-  { key: "home", href: "/" },
-  { key: "about", href: "/gioi-thieu" },
-  { key: "tours", href: "/tour-du-lich" },
-  { key: "services", href: "/dich-vu-du-lich" },
-  { key: "events", href: "/to-chuc-su-kien" },
-  { key: "careers", href: "/tuyen-dung" },
-  { key: "contact", href: "/lien-he" },
-] as const;
+function getLogoImgStyle(style: LogoStyle): CSSProperties {
+  return { width: "100%", height: "100%", objectFit: style.objectFit };
+}
 
-export default function Navbar({ locale }: { locale: string }) {
+type NavHref =
+  | "/"
+  | "/gioi-thieu"
+  | "/tour-du-lich"
+  | "/dich-vu-du-lich"
+  | "/to-chuc-su-kien"
+  | "/tuyen-dung"
+  | "/lien-he";
+
+const ALLOWED_NAV_HREFS = new Set<NavHref>([
+  "/",
+  "/gioi-thieu",
+  "/tour-du-lich",
+  "/dich-vu-du-lich",
+  "/to-chuc-su-kien",
+  "/tuyen-dung",
+  "/lien-he",
+]);
+
+function toNavHref(href: string): NavHref {
+  if (ALLOWED_NAV_HREFS.has(href as NavHref)) return href as NavHref;
+  return "/";
+}
+
+export default function Navbar({
+  locale,
+  settings,
+}: {
+  locale: string;
+  settings: Settings;
+}) {
   const t = useTranslations("nav");
   const pathname = usePathname();
   const router = useRouter();
@@ -41,7 +82,8 @@ export default function Navbar({ locale }: { locale: string }) {
     });
   }
 
-  if (pathname?.startsWith("/admin") || pathname?.startsWith("/setting")) return null;
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/setting"))
+    return null;
 
   const headerClass = [
     "fixed top-0 left-0 z-[100] w-full text-white transition-all duration-300",
@@ -71,40 +113,58 @@ export default function Navbar({ locale }: { locale: string }) {
           className="flex items-center gap-3"
           aria-label={t("logoAria")}
         >
-          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-navy text-white">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+          {settings.company.navLogo ? (
+            <span
+              className="inline-flex items-center justify-center"
+              style={getLogoBoxStyle(settings.company.navLogoStyle)}
             >
-              <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
-            </svg>
-          </span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={settings.company.navLogo}
+                alt={`${settings.company.name} logo`}
+                style={getLogoImgStyle(settings.company.navLogoStyle)}
+              />
+            </span>
+          ) : (
+            <span
+              className="flex items-center justify-center rounded-full bg-navy text-white"
+              style={{ width: settings.company.navLogoStyle.width, height: settings.company.navLogoStyle.height }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+              </svg>
+            </span>
+          )}
           <span
             className="font-serif text-xl font-extrabold tracking-wide text-white transition-colors duration-300"
             style={textShadowStyle}
           >
-            FORCO
+            {settings.company.shortName}
           </span>
         </Link>
 
         {/* Desktop menu */}
         <ul className="hidden flex-1 items-center justify-center gap-1 lg:flex">
-          {NAV_ITEMS.map((item) => {
+          {settings.navItems.map((item) => {
+            const href = toNavHref(item.href);
             const isActive =
-              (item.href === "/" && pathname === "/") ||
-              (item.href !== "/" && pathname?.startsWith(item.href));
+              (href === "/" && pathname === "/") ||
+              (href !== "/" && pathname?.startsWith(href));
             return (
-              <li key={item.key}>
+              <li key={item.id}>
                 <Link
-                  href={item.href}
+                  href={href}
                   locale={locale}
                   aria-current={isActive ? "page" : undefined}
                   className={[
@@ -115,7 +175,7 @@ export default function Navbar({ locale }: { locale: string }) {
                   ].join(" ")}
                   style={textShadowStyle}
                 >
-                  {t(item.key)}
+                  {item.label}
                 </Link>
               </li>
             );
@@ -208,14 +268,15 @@ export default function Navbar({ locale }: { locale: string }) {
         ].join(" ")}
       >
         <ul className="flex flex-col px-6 py-2">
-          {NAV_ITEMS.map((item) => {
+          {settings.navItems.map((item) => {
+            const href = toNavHref(item.href);
             const isActive =
-              (item.href === "/" && pathname === "/") ||
-              (item.href !== "/" && pathname?.startsWith(item.href));
+              (href === "/" && pathname === "/") ||
+              (href !== "/" && pathname?.startsWith(href));
             return (
-              <li key={item.key}>
+              <li key={item.id}>
                 <Link
-                  href={item.href}
+                  href={href}
                   locale={locale}
                   onClick={() => setOpen(false)}
                   aria-current={isActive ? "page" : undefined}
@@ -227,7 +288,7 @@ export default function Navbar({ locale }: { locale: string }) {
                   ].join(" ")}
                   style={textShadowStyle}
                 >
-                  {t(item.key)}
+                  {item.label}
                 </Link>
               </li>
             );

@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
-import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
+import {
+  getMessages,
+  getTranslations,
+  setRequestLocale,
+} from "next-intl/server";
 import { Merriweather, Open_Sans } from "next/font/google";
 import { routing } from "@/i18n/routing";
+import { getSettings } from "@/lib/settings";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import "./globals.css";
 
 const merriweather = Merriweather({
@@ -51,6 +57,7 @@ export default async function LocaleLayout({
 
   setRequestLocale(locale);
   const messages = await getMessages();
+  const settings = await getSettings();
 
   return (
     <html
@@ -59,8 +66,9 @@ export default async function LocaleLayout({
     >
       <body className="min-h-full flex flex-col font-sans">
         <NextIntlClientProvider messages={messages} locale={locale}>
-          <Navbar locale={locale} />
-          {children}
+          <Navbar locale={locale} settings={settings} />
+          <main className="flex-1">{children}</main>
+          <Footer settings={settings} />
         </NextIntlClientProvider>
       </body>
     </html>
