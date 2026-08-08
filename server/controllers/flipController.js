@@ -45,14 +45,26 @@ const getFlipOpportunities = async (req, res) => {
   const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
 
   try {
-    const rows = await pricesModel.getFlipRows({
-      server,
-      filters: parseShopFilters(req.query),
-      tier: parseTierFilter(req.query.tier),
-      enchant: parseEnchantFilter(req.query.enchant),
-      quality: parseQualityFilter(req.query.quality),
+    const [standardRows, upgradeRows] = await Promise.all([
+      pricesModel.getFlipRows({
+        server,
+        filters: parseShopFilters(req.query),
+        tier: parseTierFilter(req.query.tier),
+        enchant: parseEnchantFilter(req.query.enchant),
+        quality: parseQualityFilter(req.query.quality),
+      }),
+      pricesModel.getUpgradeFlipRows({
+        server,
+        filters: parseShopFilters(req.query),
+        tier: parseTierFilter(req.query.tier),
+        enchant: parseEnchantFilter(req.query.enchant),
+        quality: parseQualityFilter(req.query.quality),
+      }),
+    ]);
+    const combinedRows = [...standardRows, ...upgradeRows];
+    const opportunities = computeFlipOpportunities(combinedRows, {
+      minProfitPercent: parseIntegerFilter(req.query.minProfitPercent, { min: 0 }) ?? 0,
     });
-    const opportunities = computeFlipOpportunities(rows);
 
     const sortBy = req.query.sort === "profit_percent" ? "profit_percent" : "profit";
     opportunities.sort((a, b) => b[sortBy] - a[sortBy]);
