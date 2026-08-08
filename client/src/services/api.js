@@ -42,3 +42,15 @@ export const getLatestPriceUpdate = async (server = "asia") => {
   const res = await api.get("/prices/update-all", { params: { server } });
   return res.data;
 };
+
+export const getFlipOpportunities = async (
+  page = 1,
+  limit = 50,
+  server = "asia",
+  filters = {}
+) => {
+  const res = await api.get("/prices/flip", {
+    params: { page, limit, server, ...filters },
+  });
+  return res.data;
+};

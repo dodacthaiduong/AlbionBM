@@ -1,29 +1,32 @@
-import { useCallback, useState } from "react";
-import CurrentPricesTable from "./components/CurrentPricesTable";
-import PriceUpdatePanel from "./components/PriceUpdatePanel";
+import { createBrowserRouter, RouterProvider, NavLink, Outlet } from "react-router-dom";
+import HomePage from "./pages/HomePage";
+import FlipPage from "./pages/FlipPage";
 
-function App() {
-  const [server, setServer] = useState("asia");
-  const [priceRefreshKey, setPriceRefreshKey] = useState(0);
-  const refreshPrices = useCallback(() => {
-    setPriceRefreshKey((currentKey) => currentKey + 1);
-  }, []);
-
+function Layout() {
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>AlbionBM</h1>
-      <PriceUpdatePanel
-        server={server}
-        onServerChange={setServer}
-        onUpdateFinished={refreshPrices}
-      />
-      <CurrentPricesTable
-        key={server}
-        server={server}
-        refreshKey={priceRefreshKey}
-      />
+    <div>
+      <nav>
+        <NavLink to="/">Giá hiện tại</NavLink>
+        <NavLink to="/flip">Flip</NavLink>
+      </nav>
+      <Outlet />
     </div>
   );
+}
+
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <Layout />,
+    children: [
+      { index: true, element: <HomePage /> },
+      { path: "flip", element: <FlipPage /> },
+    ],
+  },
+]);
+
+function App() {
+  return <RouterProvider router={router} />;
 }
 
 export default App;
