@@ -25,6 +25,18 @@ const formatPrice = (price) =>
     ? "—"
     : new Intl.NumberFormat("en-US").format(price);
 
+const formatDate = (date) => {
+  if (!date) return "—";
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "—";
+  return parsed.toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 export default function FlipPage() {
   const [server, setServer] = useState("asia");
   const [opportunities, setOpportunities] = useState([]);
@@ -37,8 +49,10 @@ export default function FlipPage() {
   const [tierFilter, setTierFilter] = useState("");
   const [enchantFilter, setEnchantFilter] = useState("");
   const [qualityFilter, setQualityFilter] = useState("");
+  const [sortBy, setSortBy] = useState("profit");
   const [filterOptions, setFilterOptions] = useState([]);
   const [filterError, setFilterError] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -64,6 +78,7 @@ export default function FlipPage() {
       tier: tierFilter,
       enchant: enchantFilter,
       quality: qualityFilter,
+      sort: sortBy,
     })
       .then((data) => {
         if (!active) return;
@@ -82,7 +97,7 @@ export default function FlipPage() {
     return () => {
       active = false;
     };
-  }, [page, server, filters, tierFilter, enchantFilter, qualityFilter]);
+  }, [page, server, filters, tierFilter, enchantFilter, qualityFilter, sortBy, refreshKey]);
 
   const beginReload = () => {
     setLoading(true);
@@ -91,7 +106,7 @@ export default function FlipPage() {
 
   const reloadOpportunities = () => {
     beginReload();
-    setPage(1);
+    setRefreshKey((key) => key + 1);
   };
 
   const changePage = (nextPage) => {
@@ -182,6 +197,21 @@ export default function FlipPage() {
         <h2 className="h4 mb-0">
           Cơ hội flip — {server.toUpperCase()} ({total})
         </h2>
+        <div className="d-flex align-items-center gap-2">
+          <label className="form-label mb-0 fw-semibold">Sắp xếp:</label>
+          <select
+            className="form-select form-select-sm"
+            value={sortBy}
+            onChange={(event) => {
+              beginReload();
+              setSortBy(event.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="profit">Lãi (số tiền)</option>
+            <option value="profit_percent">Lãi %</option>
+          </select>
+        </div>
       </div>
 
       {error && <div className="alert alert-danger">Lỗi: {error}</div>}
@@ -300,8 +330,18 @@ export default function FlipPage() {
                     <td>{opportunity.enchant}</td>
                     <td>{QUALITY_LABELS[opportunity.quality] || opportunity.quality}</td>
                     <td>{opportunity.buy_city}</td>
-                    <td>{formatPrice(opportunity.buy_price)}</td>
-                    <td>{formatPrice(opportunity.sell_price)}</td>
+                    <td>
+                      <div>{formatPrice(opportunity.buy_price)}</div>
+                      <div className="text-body-secondary" style={{ fontSize: "11px" }}>
+                        {formatDate(opportunity.buy_price_date)}
+                      </div>
+                    </td>
+                    <td>
+                      <div>{formatPrice(opportunity.sell_price)}</div>
+                      <div className="text-body-secondary" style={{ fontSize: "11px" }}>
+                        {formatDate(opportunity.sell_price_date)}
+                      </div>
+                    </td>
                     <td className="fw-semibold">{formatPrice(opportunity.profit)}</td>
                     <td>
                       <span className="badge text-bg-success">{opportunity.profit_percent}%</span>

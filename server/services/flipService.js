@@ -28,7 +28,9 @@ const computeFlipOpportunities = (
       buy_city: buy.city,
       sell_city: sell.city,
       buy_price: buyPrice,
+      buy_price_date: buy.sell_price_min_date,
       sell_price: sellPrice,
+      sell_price_date: sell.sell_price_min_date,
       profit,
       profit_percent: buyPrice > 0 ? Math.round((profit / buyPrice) * 100) : 0,
     });

@@ -45,6 +45,8 @@ export default function ShopFilters({
               </select>
             </div>
           ))}
+        </div>
+        <div className="row g-3 align-items-end mt-1">
           {children}
           <div className="col-auto">
             <button

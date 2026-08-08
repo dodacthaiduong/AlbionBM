@@ -39,6 +39,9 @@ const getFlipOpportunities = async (req, res) => {
     });
     const opportunities = computeFlipOpportunities(rows);
 
+    const sortBy = req.query.sort === "profit_percent" ? "profit_percent" : "profit";
+    opportunities.sort((a, b) => b[sortBy] - a[sortBy]);
+
     const offset = (page - 1) * limit;
     const paged = opportunities.slice(offset, offset + limit);
 

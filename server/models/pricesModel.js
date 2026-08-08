@@ -107,39 +107,43 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
   }
 
   const whereClause = conditions.join(" AND ");
+  const sellCity = "Black Market";
 
   const result = await pool.query(
-    `SELECT sub.unique_name,
-            sub.english_name,
-            sub.enchant,
-            sub.quality,
-            sub.buy_city,
-            sub.buy_price,
-            sub.sell_city,
-            sub.sell_price
+    `SELECT buy.unique_name,
+            buy.english_name,
+            buy.enchant,
+            buy.quality,
+            buy.city AS buy_city,
+            buy.buy_price,
+            buy.buy_price_date,
+            $${values.length + 1} AS sell_city,
+            bm.sell_price_min AS sell_price,
+            bm.sell_price_min_date AS sell_price_date
      FROM (
-       SELECT prices.unique_name,
-              items.localized_names ->> 'EN-US' AS english_name,
+       SELECT DISTINCT ON (prices.unique_name, prices.enchant, prices.quality)
+              prices.unique_name,
+              prices.server,
               prices.enchant,
               prices.quality,
-              FIRST_VALUE(prices.city) OVER w_min  AS buy_city,
-              FIRST_VALUE(prices.sell_price_min) OVER w_min AS buy_price,
-              FIRST_VALUE(prices.city) OVER w_max  AS sell_city,
-              FIRST_VALUE(prices.sell_price_min) OVER w_max AS sell_price
+              prices.city,
+              prices.sell_price_min AS buy_price,
+              prices.sell_price_min_date AS buy_price_date,
+              items.localized_names ->> 'EN-US' AS english_name
        FROM item_prices_current AS prices
        JOIN items ON items.unique_name = prices.unique_name
        WHERE ${whereClause}
-       WINDOW w_min AS (
-         PARTITION BY prices.unique_name, prices.enchant, prices.quality
-         ORDER BY prices.sell_price_min ASC, prices.city
-       ),
-       w_max AS (
-         PARTITION BY prices.unique_name, prices.enchant, prices.quality
-         ORDER BY prices.sell_price_min DESC, prices.city
-       )
-     ) AS sub
-     WHERE sub.buy_city IS DISTINCT FROM sub.sell_city`,
-    values
+       ORDER BY prices.unique_name, prices.enchant, prices.quality, prices.sell_price_min ASC, prices.city
+     ) AS buy
+     JOIN item_prices_current AS bm
+       ON bm.server = buy.server
+      AND bm.unique_name = buy.unique_name
+      AND bm.enchant = buy.enchant
+      AND bm.quality = 1
+      AND bm.city = $${values.length + 1}
+     WHERE bm.sell_price_min IS NOT NULL
+       AND bm.city IS DISTINCT FROM buy.city`,
+    [...values, sellCity]
   );
 
   return result.rows.map((row) => ({
@@ -147,8 +151,8 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
     english_name: row.english_name,
     enchant: row.enchant,
     quality: row.quality,
-    buy: { city: row.buy_city, sell_price_min: row.buy_price },
-    sell: { city: row.sell_city, sell_price_min: row.sell_price },
+    buy: { city: row.buy_city, sell_price_min: row.buy_price, sell_price_min_date: row.buy_price_date },
+    sell: { city: row.sell_city, sell_price_min: row.sell_price, sell_price_min_date: row.sell_price_date },
   }));
 };
 
