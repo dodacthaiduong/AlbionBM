@@ -162,6 +162,9 @@ export default function FlipPage() {
       >
         »»
       </button>
+      <button className="btn btn-outline-primary btn-sm ms-1" disabled={loading} onClick={reloadOpportunities}>
+        Tải lại
+      </button>
     </div>
   );
 
