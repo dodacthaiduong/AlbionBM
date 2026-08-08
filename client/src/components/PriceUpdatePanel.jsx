@@ -106,86 +106,83 @@ export default function PriceUpdatePanel({ server, onServerChange, onUpdateFinis
   };
 
   return (
-    <section
-      style={{
-        marginBottom: "24px",
-        padding: "16px",
-        border: "1px solid #dbe3ec",
-        borderRadius: "8px",
-        background: "#f8fafc",
-      }}
-    >
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "end" }}>
-        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <span style={{ fontWeight: 600 }}>Server</span>
-          <select
-            value={server}
-            disabled={starting || isActive}
-            onChange={handleServerChange}
-            style={{ minWidth: "150px", padding: "8px" }}
-          >
-            {SERVERS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          disabled={starting || isActive || loadingStatus}
-          onClick={handleStart}
-          style={{ padding: "9px 16px", fontWeight: 600 }}
-        >
-          {starting ? "Đang khởi tạo..." : isActive ? "Đang cập nhật giá..." : "Cập nhật tất cả giá"}
-        </button>
-      </div>
-
-      {loadingStatus && <p>Đang kiểm tra trạng thái cập nhật...</p>}
-      {error && <p style={{ color: "#b91c1c" }}>{error}</p>}
-
-      {job && (
-        <div aria-live="polite" style={{ marginTop: "14px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: "12px" }}>
-            <strong>{STATUS_LABELS[job.status] || job.status}</strong>
-            {job.total_batches > 0 && <span>{progress}%</span>}
+    <section className="card shadow-sm border-0">
+      <div className="card-body">
+        <div className="row g-3 align-items-end">
+          <div className="col-auto">
+            <label className="form-label fw-semibold mb-1">Server</label>
+            <select
+              className="form-select"
+              value={server}
+              disabled={starting || isActive}
+              onChange={handleServerChange}
+            >
+              {SERVERS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
           </div>
-          <progress
-            max="100"
-            value={progress}
-            style={{ width: "100%", height: "18px", marginTop: "6px" }}
-          />
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-              gap: "6px 16px",
-              marginTop: "10px",
-              fontSize: "14px",
-            }}
-          >
-            <span>Items: {job.total_items}</span>
-            <span>Item IDs: {job.total_item_ids}</span>
-            <span>Batch: {job.completed_batches} / {job.total_batches}</span>
-            <span>Dòng current: {job.current_rows}</span>
-            <span>Dòng history mới: {job.history_rows}</span>
-            <span>Batch lỗi: {job.failed_batches}</span>
+          <div className="col-auto">
+            <button
+              type="button"
+              className="btn btn-primary fw-semibold"
+              disabled={starting || isActive || loadingStatus}
+              onClick={handleStart}
+            >
+              {starting
+                ? "Đang khởi tạo..."
+                : isActive
+                  ? "Đang cập nhật giá..."
+                  : "Cập nhật tất cả giá"}
+            </button>
           </div>
-          {job.error_message && <p style={{ color: "#b91c1c" }}>{job.error_message}</p>}
-          {job.errors?.length > 0 && (
-            <details style={{ marginTop: "8px" }}>
-              <summary>Xem lỗi batch ({job.errors.length})</summary>
-              <ul>
-                {job.errors.map((batchError, index) => (
-                  <li key={`${batchError.batch}-${index}`}>
-                    Batch {batchError.batch}: {batchError.message}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
         </div>
-      )}
+
+        {loadingStatus && (
+          <div className="text-body-secondary mt-3">Đang kiểm tra trạng thái cập nhật...</div>
+        )}
+        {error && <div className="alert alert-danger mt-3 mb-0">{error}</div>}
+
+        {job && (
+          <div aria-live="polite" className="mt-3">
+            <div className="d-flex justify-content-between align-items-center mb-1">
+              <strong>{STATUS_LABELS[job.status] || job.status}</strong>
+              {job.total_batches > 0 && <span>{progress}%</span>}
+            </div>
+            <div className="progress" role="progressbar" aria-valuenow={progress} aria-valuemin="0" aria-valuemax="100">
+              <div
+                className="progress-bar"
+                style={{ width: `${progress}%` }}
+              >
+                {progress}%
+              </div>
+            </div>
+            <div className="row g-2 mt-2 small">
+              <div className="col-6 col-md-4 col-lg-2">Items: {job.total_items}</div>
+              <div className="col-6 col-md-4 col-lg-2">Item IDs: {job.total_item_ids}</div>
+              <div className="col-6 col-md-4 col-lg-2">Batch: {job.completed_batches} / {job.total_batches}</div>
+              <div className="col-6 col-md-4 col-lg-2">Dòng current: {job.current_rows}</div>
+              <div className="col-6 col-md-4 col-lg-2">Dòng history mới: {job.history_rows}</div>
+              <div className="col-6 col-md-4 col-lg-2">Batch lỗi: {job.failed_batches}</div>
+            </div>
+            {job.error_message && <div className="alert alert-danger mt-2 mb-0">{job.error_message}</div>}
+            {job.errors?.length > 0 && (
+              <details className="mt-2">
+                <summary>Xem lỗi batch ({job.errors.length})</summary>
+                <ul className="mb-0 mt-2">
+                  {job.errors.map((batchError, index) => (
+                    <li key={`${batchError.batch}-${index}`}>
+                      Batch {batchError.batch}: {batchError.message}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        )}
+      </div>
     </section>
   );
 }

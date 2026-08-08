@@ -62,9 +62,9 @@ const getRecommendedBuyPrice = (sellPriceMin, discountPercent) => {
 
 function PriceCell({ price, date }) {
   return (
-    <div style={{ whiteSpace: "nowrap" }}>
+    <div className="text-nowrap">
       <strong>{formatPrice(price)}</strong>
-      <div style={{ marginTop: "2px", color: "#64748b", fontSize: "11px" }}>
+      <div className="text-body-secondary" style={{ marginTop: "2px", fontSize: "11px" }}>
         {formatDate(date)}
       </div>
     </div>
@@ -227,197 +227,191 @@ export default function CurrentPricesTable({ server, refreshKey }) {
     enchantFilter !== "";
 
   const pagination = (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
-      <button disabled={page <= 1 || loading} onClick={() => changePage(1)}>
+    <div className="d-flex flex-wrap gap-2 align-items-center">
+      <button className="btn btn-outline-secondary btn-sm" disabled={page <= 1 || loading} onClick={() => changePage(1)}>
         ««
       </button>
-      <button disabled={page <= 1 || loading} onClick={() => changePage(page - 1)}>
+      <button className="btn btn-outline-secondary btn-sm" disabled={page <= 1 || loading} onClick={() => changePage(page - 1)}>
         « Trước
       </button>
-      <span>
+      <span className="mx-1">
         Trang {totalPages === 0 ? 0 : page} / {totalPages}
       </span>
       <button
+        className="btn btn-outline-secondary btn-sm"
         disabled={page >= totalPages || loading}
         onClick={() => changePage(page + 1)}
       >
         Sau »
       </button>
       <button
+        className="btn btn-outline-secondary btn-sm"
         disabled={page >= totalPages || loading}
         onClick={() => changePage(totalPages)}
       >
         »»
       </button>
-      <button disabled={loading} onClick={reload} style={{ marginLeft: "4px" }}>
+      <button className="btn btn-outline-primary btn-sm ms-1" disabled={loading} onClick={reload}>
         Tải lại
       </button>
     </div>
   );
 
   return (
-    <section>
-      <h2>
-        Giá hiện tại — {server.toUpperCase()} ({prices.length} / {total})
-      </h2>
+    <section className="card shadow-sm border-0">
+      <div className="card-body">
+        <h2 className="h5 mb-3">
+          Giá hiện tại — {server.toUpperCase()} ({prices.length} / {total})
+        </h2>
 
-      {error && <p style={{ color: "#b91c1c" }}>Lỗi: {error}</p>}
-      <ShopFilters
-        filters={filters}
-        filterOptions={filterOptions}
-        onFilterChange={handleFilterChange}
-        onClearFilters={clearFilters}
-        hasActiveFilters={hasActiveFilters}
-      >
-        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <span>Enchant</span>
-          <select
-            value={enchantFilter}
-            onChange={(event) => handleEnchantFilterChange(event.target.value)}
-            style={{ minWidth: "120px", padding: "6px" }}
-          >
-            <option value="">Tất cả</option>
-            {ENCHANT_OPTIONS.map((enchant) => (
-              <option key={enchant} value={enchant}>
-                {enchant}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <span>Tier</span>
-          <select
-            value={tierFilter}
-            onChange={(event) => handleTierFilterChange(event.target.value)}
-            style={{ minWidth: "120px", padding: "6px" }}
-          >
-            <option value="">Tất cả</option>
-            {TIER_OPTIONS.map((tier) => (
-              <option key={tier} value={tier}>
-                {tier}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <span>City</span>
-          <select
-            value={cityFilter}
-            onChange={(event) => handleCityFilterChange(event.target.value)}
-            style={{ minWidth: "150px", padding: "6px" }}
-          >
-            <option value="">Tất cả</option>
-            {CITY_OPTIONS.map((city) => (
-              <option key={city} value={city}>
-                {city}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <span>% trừ min price</span>
-          <input
-            type="number"
-            min="0"
-            max="100"
-            step="1"
-            value={minPriceDiscountPercent}
-            onChange={(event) => handleMinPriceDiscountChange(event.target.value)}
-            style={{ minWidth: "130px", padding: "6px" }}
-          />
-        </label>
-        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <span>Quality</span>
-          <select
-            value={qualityFilter}
-            onChange={(event) => handleQualityFilterChange(event.target.value)}
-            style={{ minWidth: "150px", padding: "6px" }}
-          >
-            <option value="">Tất cả</option>
-            {QUALITY_OPTIONS.map((quality) => (
-              <option key={quality} value={quality}>
-                {QUALITY_LABELS[quality] || quality}
-              </option>
-            ))}
-          </select>
-        </label>
-      </ShopFilters>
-      {filterError && (
-        <p style={{ color: "#b91c1c" }}>
-          Không thể tải tùy chọn bộ lọc: {filterError}
-        </p>
-      )}
-      <div style={{ marginBottom: "10px" }}>{pagination}</div>
-
-      <div style={{ overflowX: "auto" }}>
-        <table
-          border="1"
-          cellPadding="7"
-          style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}
+        {error && <div className="alert alert-danger">{error}</div>}
+        <ShopFilters
+          filters={filters}
+          filterOptions={filterOptions}
+          onFilterChange={handleFilterChange}
+          onClearFilters={clearFilters}
+          hasActiveFilters={hasActiveFilters}
         >
-          <thead>
-            <tr style={{ background: "#f0f0f0" }}>
-              <th>Item</th>
-              <th>Enchant</th>
-              <th>City</th>
-              <th>Quality</th>
-              <th>Sell min</th>
-              <th>Giá nhập khuyến nghị</th>
-              <th>Sell max</th>
-              <th>Buy min</th>
-              <th>Buy max</th>
-              <th>Fetched at</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan="10">Đang tải giá hiện tại...</td>
-              </tr>
-            ) : prices.length === 0 ? (
-              <tr>
-                <td colSpan="10">
-                  {hasActiveFilters
-                    ? "Không có dữ liệu giá phù hợp với bộ lọc hiện tại."
-                    : "Chưa có dữ liệu giá cho server này. Hãy bấm “Cập nhật tất cả giá”."}
-                </td>
-              </tr>
-            ) : (
-              prices.map((price) => (
-                <tr
-                  key={`${price.server}-${price.unique_name}-${price.enchant}-${price.city}-${price.quality}`}
-                >
-                  <td>
-                    <strong>{price.english_name || price.unique_name}</strong>
-                    <div style={{ color: "#64748b", fontSize: "11px" }}>
-                      {price.unique_name}
-                    </div>
-                  </td>
-                  <td style={{ textAlign: "center" }}>{price.enchant}</td>
-                  <td>{price.city}</td>
-                  <td title={`Quality ${price.quality}`}>
-                    {QUALITY_LABELS[price.quality] || price.quality}
-                  </td>
-                  <td><PriceCell price={price.sell_price_min} date={price.sell_price_min_date} /></td>
-                  <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
-                    <strong>
-                      {formatPrice(
-                        getRecommendedBuyPrice(price.sell_price_min, minPriceDiscountPercent)
-                      )}
-                    </strong>
-                  </td>
-                  <td><PriceCell price={price.sell_price_max} date={price.sell_price_max_date} /></td>
-                  <td><PriceCell price={price.buy_price_min} date={price.buy_price_min_date} /></td>
-                  <td><PriceCell price={price.buy_price_max} date={price.buy_price_max_date} /></td>
-                  <td style={{ whiteSpace: "nowrap" }}>{formatDate(price.fetched_at)}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+          <div className="col-auto">
+            <label className="form-label fw-semibold mb-1">Tier</label>
+            <select
+              className="form-select"
+              value={tierFilter}
+              onChange={(event) => handleTierFilterChange(event.target.value)}
+            >
+              <option value="">Tất cả</option>
+              {TIER_OPTIONS.map((tier) => (
+                <option key={tier} value={tier}>
+                  {tier}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-auto">
+            <label className="form-label fw-semibold mb-1">Enchant</label>
+            <select
+              className="form-select"
+              value={enchantFilter}
+              onChange={(event) => handleEnchantFilterChange(event.target.value)}
+            >
+              <option value="">Tất cả</option>
+              {ENCHANT_OPTIONS.map((enchant) => (
+                <option key={enchant} value={enchant}>
+                  {enchant}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-auto">
+            <label className="form-label fw-semibold mb-1">Quality</label>
+            <select
+              className="form-select"
+              value={qualityFilter}
+              onChange={(event) => handleQualityFilterChange(event.target.value)}
+            >
+              <option value="">Tất cả</option>
+              {QUALITY_OPTIONS.map((quality) => (
+                <option key={quality} value={quality}>
+                  {QUALITY_LABELS[quality] || quality}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="col-auto">
+            <label className="form-label fw-semibold mb-1">% trừ min price</label>
+            <input
+              type="number"
+              className="form-control"
+              min="0"
+              max="100"
+              step="1"
+              value={minPriceDiscountPercent}
+              onChange={(event) => handleMinPriceDiscountChange(event.target.value)}
+            />
+          </div>
+          <div className="col-auto">
+            <label className="form-label fw-semibold mb-1">City</label>
+            <select
+              className="form-select"
+              value={cityFilter}
+              onChange={(event) => handleCityFilterChange(event.target.value)}
+            >
+              <option value="">Tất cả</option>
+              {CITY_OPTIONS.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
+              ))}
+            </select>
+          </div>
+        </ShopFilters>
+        {filterError && <div className="alert alert-danger">Không thể tải tùy chọn bộ lọc: {filterError}</div>}
+        <div className="mb-3">{pagination}</div>
 
-      <div style={{ marginTop: "10px" }}>{pagination}</div>
+        <div className="table-responsive">
+          <table className="table table-hover table-striped align-middle small">
+            <thead className="table-light">
+              <tr>
+                <th>Item</th>
+                <th>Enchant</th>
+                <th>City</th>
+                <th>Quality</th>
+                <th>Sell min</th>
+                <th>Giá nhập khuyến nghị</th>
+                <th>Sell max</th>
+                <th>Fetched at</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="8" className="text-center text-body-secondary py-4">
+                    Đang tải giá hiện tại...
+                  </td>
+                </tr>
+              ) : prices.length === 0 ? (
+                <tr>
+                  <td colSpan="8" className="text-center text-body-secondary py-4">
+                    {hasActiveFilters
+                      ? "Không có dữ liệu giá phù hợp với bộ lọc hiện tại."
+                      : "Chưa có dữ liệu giá cho server này. Hãy bấm “Cập nhật tất cả giá”."}
+                  </td>
+                </tr>
+              ) : (
+                prices.map((price) => (
+                  <tr
+                    key={`${price.server}-${price.unique_name}-${price.enchant}-${price.city}-${price.quality}`}
+                  >
+                    <td>
+                      <strong>{price.english_name || price.unique_name}</strong>
+                      <div className="text-body-secondary" style={{ fontSize: "11px" }}>
+                        {price.unique_name}
+                      </div>
+                    </td>
+                    <td className="text-center">{price.enchant}</td>
+                    <td>{price.city}</td>
+                    <td title={`Quality ${price.quality}`}>
+                      {QUALITY_LABELS[price.quality] || price.quality}
+                    </td>
+                    <td><PriceCell price={price.sell_price_min} date={price.sell_price_min_date} /></td>
+                    <td className="text-nowrap text-end">
+                      <strong>
+                        {formatPrice(
+                          getRecommendedBuyPrice(price.sell_price_min, minPriceDiscountPercent)
+                        )}
+                      </strong>
+                    </td>
+                    <td><PriceCell price={price.sell_price_max} date={price.sell_price_max_date} /></td>
+                    <td className="text-nowrap">{formatDate(price.fetched_at)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-3">{pagination}</div>
+      </div>
     </section>
   );
 }

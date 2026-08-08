@@ -25,43 +25,38 @@ export default function ShopFilters({
   const hasActiveFilters = hasActiveFiltersOverride ?? hasActiveShopFilters(filters);
 
   return (
-    <div
-      style={{
-        marginBottom: "16px",
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "12px",
-        alignItems: "end",
-      }}
-    >
-      {SHOP_FILTER_FIELDS.map((field, index) => (
-        <label
-          key={field.key}
-          style={{ display: "flex", flexDirection: "column", gap: "4px" }}
-        >
-          <span>{field.label}</span>
-          <select
-            value={filters[field.key] || ""}
-            onChange={(event) => onFilterChange(index, event.target.value)}
-            style={{ minWidth: "180px", padding: "6px" }}
-          >
-            <option value="">Tất cả</option>
-            {getOptionsForFilter(index).map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
-      ))}
-      {children}
-      <button
-        disabled={!hasActiveFilters}
-        onClick={onClearFilters}
-        style={{ padding: "7px 12px" }}
-      >
-        Xóa bộ lọc
-      </button>
+    <div className="card shadow-sm border-0 mb-4">
+      <div className="card-body">
+        <div className="row g-3 align-items-end">
+          {SHOP_FILTER_FIELDS.map((field, index) => (
+            <div className="col-auto" key={field.key}>
+              <label className="form-label fw-semibold mb-1">{field.label}</label>
+              <select
+                className="form-select"
+                value={filters[field.key] || ""}
+                onChange={(event) => onFilterChange(index, event.target.value)}
+              >
+                <option value="">Tất cả</option>
+                {getOptionsForFilter(index).map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ))}
+          {children}
+          <div className="col-auto">
+            <button
+              className="btn btn-outline-secondary"
+              disabled={!hasActiveFilters}
+              onClick={onClearFilters}
+            >
+              Xóa bộ lọc
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

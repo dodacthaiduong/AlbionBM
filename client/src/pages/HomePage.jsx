@@ -11,12 +11,14 @@ function HomePage() {
 
   return (
     <div>
-      <h1>AlbionBM</h1>
-      <PriceUpdatePanel
-        server={server}
-        onServerChange={setServer}
-        onUpdateFinished={refreshPrices}
-      />
+      <div className="mb-4">
+        <PriceUpdatePanel
+          server={server}
+          onServerChange={setServer}
+          onUpdateFinished={refreshPrices}
+        />
+      </div>
+
       <CurrentPricesTable
         key={server}
         server={server}
