@@ -19,8 +19,8 @@ const parseIntegerMulti = (value, { min, max } = {}) => {
     .map((part) => part.trim())
     .filter(Boolean)
     .filter((part) => {
+      if (!/^\d+$/.test(part)) return false;
       const parsed = Number(part);
-      if (!Number.isInteger(parsed)) return false;
       if (min !== undefined && parsed < min) return false;
       if (max !== undefined && parsed > max) return false;
       return true;

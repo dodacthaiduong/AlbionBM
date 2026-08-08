@@ -239,7 +239,7 @@ export default function FlipPage() {
             }}
           >
             {TIER_OPTIONS.map((tier) => (
-              <option key={tier} value={tier}>
+              <option key={tier} value={String(tier)}>
                 {tier}
               </option>
             ))}
@@ -259,7 +259,7 @@ export default function FlipPage() {
             }}
           >
             {ENCHANT_OPTIONS.map((enchant) => (
-              <option key={enchant} value={enchant}>
+              <option key={enchant} value={String(enchant)}>
                 {enchant}
               </option>
             ))}
@@ -279,7 +279,7 @@ export default function FlipPage() {
             }}
           >
             {QUALITY_OPTIONS.map((quality) => (
-              <option key={quality} value={quality}>
+              <option key={quality} value={String(quality)}>
                 {QUALITY_LABELS[quality] || quality}
               </option>
             ))}

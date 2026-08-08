@@ -21,10 +21,10 @@ export const getUniqueValues = (rows, key) =>
 
 export const valueToArray = (value) => {
   if (!value) return [];
-  return String(value)
+  return [...new Set(String(value)
     .split(",")
     .map((part) => part.trim())
-    .filter(Boolean);
+    .filter(Boolean))];
 };
 
 export const arrayToValue = (parts) => parts.join(",");
