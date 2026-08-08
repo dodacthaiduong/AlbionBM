@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import PriceUpdatePanel from "../components/PriceUpdatePanel";
 import ShopFilters from "../components/ShopFilters";
+import MultiSelectDropdown from "../components/MultiSelectDropdown";
 import {
   SHOP_FILTER_FIELDS,
   createEmptyShopFilters,
   hasActiveShopFilters,
   valueToArray,
-  arrayToValue,
 } from "../utils/shopFilters";
 import { getFlipOpportunities, getShopFilterOptions } from "../services/api";
 
@@ -227,63 +227,40 @@ export default function FlipPage() {
       >
         <div className="col-auto">
           <label className="form-label fw-semibold mb-1">Tier</label>
-          <select
-            className="form-select"
-            multiple
-            size={4}
-            value={valueToArray(tierFilter)}
-            onChange={(event) => {
+          <MultiSelectDropdown
+            value={tierFilter}
+            onChange={(csvValue) => {
               beginReload();
-              setTierFilter(arrayToValue(Array.from(event.target.selectedOptions, (o) => o.value)));
+              setTierFilter(csvValue);
               setPage(1);
             }}
-          >
-            {TIER_OPTIONS.map((tier) => (
-              <option key={tier} value={String(tier)}>
-                {tier}
-              </option>
-            ))}
-          </select>
+            options={TIER_OPTIONS.map(String)}
+          />
         </div>
         <div className="col-auto">
           <label className="form-label fw-semibold mb-1">Enchant</label>
-          <select
-            className="form-select"
-            multiple
-            size={4}
-            value={valueToArray(enchantFilter)}
-            onChange={(event) => {
+          <MultiSelectDropdown
+            value={enchantFilter}
+            onChange={(csvValue) => {
               beginReload();
-              setEnchantFilter(arrayToValue(Array.from(event.target.selectedOptions, (o) => o.value)));
+              setEnchantFilter(csvValue);
               setPage(1);
             }}
-          >
-            {ENCHANT_OPTIONS.map((enchant) => (
-              <option key={enchant} value={String(enchant)}>
-                {enchant}
-              </option>
-            ))}
-          </select>
+            options={ENCHANT_OPTIONS.map(String)}
+          />
         </div>
         <div className="col-auto">
           <label className="form-label fw-semibold mb-1">Quality</label>
-          <select
-            className="form-select"
-            multiple
-            size={4}
-            value={valueToArray(qualityFilter)}
-            onChange={(event) => {
+          <MultiSelectDropdown
+            value={qualityFilter}
+            onChange={(csvValue) => {
               beginReload();
-              setQualityFilter(arrayToValue(Array.from(event.target.selectedOptions, (o) => o.value)));
+              setQualityFilter(csvValue);
               setPage(1);
             }}
-          >
-            {QUALITY_OPTIONS.map((quality) => (
-              <option key={quality} value={String(quality)}>
-                {QUALITY_LABELS[quality] || quality}
-              </option>
-            ))}
-          </select>
+            options={QUALITY_OPTIONS.map(String)}
+            getLabel={(quality) => QUALITY_LABELS[Number(quality)] || quality}
+          />
         </div>
       </ShopFilters>
 

@@ -3,8 +3,8 @@ import {
   getUniqueValues,
   hasActiveShopFilters,
   valueToArray,
-  arrayToValue,
 } from "../utils/shopFilters";
+import MultiSelectDropdown from "./MultiSelectDropdown";
 
 export default function ShopFilters({
   filters,
@@ -33,27 +33,11 @@ export default function ShopFilters({
           {SHOP_FILTER_FIELDS.map((field, index) => (
             <div className="col-auto" key={field.key}>
               <label className="form-label fw-semibold mb-1">{field.label}</label>
-              <select
-                className="form-select"
-                multiple
-                size={4}
-                value={valueToArray(filters[field.key])}
-                onChange={(event) =>
-                  onFilterChange(
-                    index,
-                    arrayToValue(Array.from(event.target.selectedOptions, (o) => o.value))
-                  )
-                }
-              >
-                {getOptionsForFilter(index).map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
-                ))}
-              </select>
-              <div className="form-text">
-                Giữ Ctrl (hoặc Cmd) để chọn nhiều. Bỏ chọn hết = Tất cả.
-              </div>
+              <MultiSelectDropdown
+                value={filters[field.key]}
+                onChange={(csvValue) => onFilterChange(index, csvValue)}
+                options={getOptionsForFilter(index)}
+              />
             </div>
           ))}
         </div>
