@@ -24,3 +24,11 @@
 .multi-select-item:hover {
   background: #f8f9fa;
 }
+
+.multi-select-item.selected {
+  background: #e7f1ff;
+}
+
+.multi-select-item.selected .form-check-label {
+  font-weight: 600;
+}

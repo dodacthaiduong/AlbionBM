@@ -80,7 +80,12 @@ export default function MultiSelectDropdown({
           </div>
           <div className="multi-select-list">
             {options.map((option) => (
-              <label key={option} className="form-check d-block px-2 py-1 mb-0 multi-select-item">
+              <label
+                key={option}
+                className={`form-check d-block px-2 py-1 mb-0 multi-select-item${
+                  selected.includes(option) ? " selected" : ""
+                }`}
+              >
                 <input
                   type="checkbox"
                   className="form-check-input"
