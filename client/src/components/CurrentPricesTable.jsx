@@ -18,8 +18,20 @@ const QUALITY_LABELS = {
 
 const ENCHANT_OPTIONS = [0, 1, 2, 3, 4];
 const TIER_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
+const CITY_OPTIONS = [
+  "Caerleon",
+  "Black Market",
+  "Bridgewatch",
+  "Martlock",
+  "Lymhurst",
+  "Fort Sterling",
+  "Thetford",
+  "Brecilien",
+];
 const QUALITY_OPTIONS = [1, 2, 3, 4, 5];
 const DEFAULT_QUALITY_FILTER = "1";
+const DEFAULT_MIN_PRICE_DISCOUNT_PERCENT = "10";
+const MARKET_TAX_MULTIPLIER = 0.935;
 
 const formatPrice = (price) =>
   price === null || price === undefined ? "—" : new Intl.NumberFormat("en-US").format(price);
@@ -30,6 +42,22 @@ const formatDate = (value) => {
     dateStyle: "short",
     timeStyle: "short",
   }).format(new Date(value));
+};
+
+const getDiscountMultiplier = (discountPercent) => {
+  const percent = Number(discountPercent);
+  if (!Number.isFinite(percent)) return 1;
+
+  return Math.max(0, 1 - percent / 100);
+};
+
+const getRecommendedBuyPrice = (sellPriceMin, discountPercent) => {
+  if (sellPriceMin === null || sellPriceMin === undefined) return null;
+
+  const price = Number(sellPriceMin);
+  return Number.isFinite(price)
+    ? Math.floor(price * MARKET_TAX_MULTIPLIER * getDiscountMultiplier(discountPercent))
+    : null;
 };
 
 function PriceCell({ price, date }) {
@@ -52,8 +80,12 @@ export default function CurrentPricesTable({ server, refreshKey }) {
   const [error, setError] = useState("");
   const [filters, setFilters] = useState(createEmptyShopFilters);
   const [tierFilter, setTierFilter] = useState("");
+  const [cityFilter, setCityFilter] = useState("");
   const [qualityFilter, setQualityFilter] = useState(DEFAULT_QUALITY_FILTER);
   const [enchantFilter, setEnchantFilter] = useState("");
+  const [minPriceDiscountPercent, setMinPriceDiscountPercent] = useState(
+    DEFAULT_MIN_PRICE_DISCOUNT_PERCENT
+  );
   const [filterOptions, setFilterOptions] = useState([]);
   const [filterError, setFilterError] = useState(null);
 
@@ -79,6 +111,7 @@ export default function CurrentPricesTable({ server, refreshKey }) {
     getCurrentPrices(page, PAGE_SIZE, server, {
       ...filters,
       tier: tierFilter,
+      city: cityFilter,
       quality: qualityFilter,
       enchant: enchantFilter,
     })
@@ -99,7 +132,7 @@ export default function CurrentPricesTable({ server, refreshKey }) {
     return () => {
       active = false;
     };
-  }, [page, server, refreshKey, filters, tierFilter, qualityFilter, enchantFilter]);
+  }, [page, server, refreshKey, filters, tierFilter, cityFilter, qualityFilter, enchantFilter]);
 
   const beginReload = () => {
     setLoading(true);
@@ -134,6 +167,12 @@ export default function CurrentPricesTable({ server, refreshKey }) {
     setPage(1);
   };
 
+  const handleCityFilterChange = (value) => {
+    beginReload();
+    setCityFilter(value);
+    setPage(1);
+  };
+
   const handleQualityFilterChange = (value) => {
     beginReload();
     setQualityFilter(value);
@@ -146,10 +185,15 @@ export default function CurrentPricesTable({ server, refreshKey }) {
     setPage(1);
   };
 
+  const handleMinPriceDiscountChange = (value) => {
+    setMinPriceDiscountPercent(value);
+  };
+
   const clearFilters = () => {
     beginReload();
     setFilters(createEmptyShopFilters());
     setTierFilter("");
+    setCityFilter("");
     setQualityFilter(DEFAULT_QUALITY_FILTER);
     setEnchantFilter("");
     setPage(1);
@@ -160,6 +204,7 @@ export default function CurrentPricesTable({ server, refreshKey }) {
     getCurrentPrices(page, PAGE_SIZE, server, {
       ...filters,
       tier: tierFilter,
+      city: cityFilter,
       quality: qualityFilter,
       enchant: enchantFilter,
     })
@@ -177,6 +222,7 @@ export default function CurrentPricesTable({ server, refreshKey }) {
   const hasActiveFilters =
     hasActiveShopFilters(filters) ||
     tierFilter !== "" ||
+    cityFilter !== "" ||
     qualityFilter !== DEFAULT_QUALITY_FILTER ||
     enchantFilter !== "";
 
@@ -254,6 +300,33 @@ export default function CurrentPricesTable({ server, refreshKey }) {
           </select>
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <span>City</span>
+          <select
+            value={cityFilter}
+            onChange={(event) => handleCityFilterChange(event.target.value)}
+            style={{ minWidth: "150px", padding: "6px" }}
+          >
+            <option value="">Tất cả</option>
+            {CITY_OPTIONS.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+          <span>% trừ min price</span>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            value={minPriceDiscountPercent}
+            onChange={(event) => handleMinPriceDiscountChange(event.target.value)}
+            style={{ minWidth: "130px", padding: "6px" }}
+          />
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
           <span>Quality</span>
           <select
             value={qualityFilter}
@@ -289,6 +362,7 @@ export default function CurrentPricesTable({ server, refreshKey }) {
               <th>City</th>
               <th>Quality</th>
               <th>Sell min</th>
+              <th>Giá nhập khuyến nghị</th>
               <th>Sell max</th>
               <th>Buy min</th>
               <th>Buy max</th>
@@ -298,11 +372,11 @@ export default function CurrentPricesTable({ server, refreshKey }) {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="9">Đang tải giá hiện tại...</td>
+                <td colSpan="10">Đang tải giá hiện tại...</td>
               </tr>
             ) : prices.length === 0 ? (
               <tr>
-                <td colSpan="9">
+                <td colSpan="10">
                   {hasActiveFilters
                     ? "Không có dữ liệu giá phù hợp với bộ lọc hiện tại."
                     : "Chưa có dữ liệu giá cho server này. Hãy bấm “Cập nhật tất cả giá”."}
@@ -325,6 +399,13 @@ export default function CurrentPricesTable({ server, refreshKey }) {
                     {QUALITY_LABELS[price.quality] || price.quality}
                   </td>
                   <td><PriceCell price={price.sell_price_min} date={price.sell_price_min_date} /></td>
+                  <td style={{ whiteSpace: "nowrap", textAlign: "right" }}>
+                    <strong>
+                      {formatPrice(
+                        getRecommendedBuyPrice(price.sell_price_min, minPriceDiscountPercent)
+                      )}
+                    </strong>
+                  </td>
                   <td><PriceCell price={price.sell_price_max} date={price.sell_price_max_date} /></td>
                   <td><PriceCell price={price.buy_price_min} date={price.buy_price_min_date} /></td>
                   <td><PriceCell price={price.buy_price_max} date={price.buy_price_max_date} /></td>

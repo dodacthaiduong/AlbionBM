@@ -65,6 +65,24 @@ const parseEnchantFilter = (value) => parseIntegerFilter(value, { min: 0, max: 4
 const parseTierFilter = (value) => parseIntegerFilter(value, { min: 1, max: 8 });
 const parseQualityFilter = (value) => parseIntegerFilter(value, { min: 1, max: 5 });
 
+const ALLOWED_CITY_FILTERS = new Set([
+  "Caerleon",
+  "Black Market",
+  "Bridgewatch",
+  "Martlock",
+  "Lymhurst",
+  "Fort Sterling",
+  "Thetford",
+  "Brecilien",
+]);
+
+const parseCityFilter = (value) => {
+  if (typeof value !== "string" || value.trim() === "") return null;
+
+  const city = value.trim();
+  return ALLOWED_CITY_FILTERS.has(city) ? city : null;
+};
+
 const getCurrentPrices = async (req, res) => {
   const server =
     typeof req.query.server === "string" ? req.query.server.trim().toLowerCase() : "asia";
@@ -82,6 +100,7 @@ const getCurrentPrices = async (req, res) => {
     const filters = parseShopFilters(req.query);
     const enchant = parseEnchantFilter(req.query.enchant);
     const tier = parseTierFilter(req.query.tier);
+    const city = parseCityFilter(req.query.city);
     const quality = parseQualityFilter(req.query.quality);
     const data = await pricesModel.getCurrentPrices({
       server,
@@ -90,6 +109,7 @@ const getCurrentPrices = async (req, res) => {
       filters,
       enchant,
       tier,
+      city,
       quality,
     });
     return res.json(data);

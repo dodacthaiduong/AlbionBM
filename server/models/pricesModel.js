@@ -8,6 +8,7 @@ const getCurrentPrices = async ({
   filters = {},
   enchant = null,
   tier = null,
+  city = null,
   quality = null,
 }) => {
   const offset = (page - 1) * limit;
@@ -24,6 +25,11 @@ const getCurrentPrices = async ({
   if (tier !== null) {
     values.push(tier);
     conditions.push(`items.tier = $${values.length}`);
+  }
+
+  if (city !== null) {
+    values.push(city);
+    conditions.push(`prices.city = $${values.length}`);
   }
 
   if (quality !== null) {
