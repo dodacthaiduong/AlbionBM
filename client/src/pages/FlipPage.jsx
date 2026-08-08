@@ -51,8 +51,10 @@ export default function FlipPage() {
   const [tierFilter, setTierFilter] = useState("");
   const [enchantFilter, setEnchantFilter] = useState("");
   const [qualityFilter, setQualityFilter] = useState("");
-  const [sortBy, setSortBy] = useState("profit");
+  const [sortBy, setSortBy] = useState("profit_percent");
+  const [minProfitPercent, setMinProfitPercent] = useState("");
   const [filterOptions, setFilterOptions] = useState([]);
+  const [filterLabels, setFilterLabels] = useState({});
   const [filterError, setFilterError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -61,7 +63,10 @@ export default function FlipPage() {
 
     getShopFilterOptions()
       .then((data) => {
-        if (active) setFilterOptions(data.options);
+        if (active) {
+          setFilterOptions(data.options);
+          setFilterLabels(data.labels || {});
+        }
       })
       .catch((requestError) => {
         if (active) setFilterError(requestError.message);
@@ -81,6 +86,7 @@ export default function FlipPage() {
       enchant: enchantFilter,
       quality: qualityFilter,
       sort: sortBy,
+      minProfitPercent,
     })
       .then((data) => {
         if (!active) return;
@@ -99,7 +105,7 @@ export default function FlipPage() {
     return () => {
       active = false;
     };
-  }, [page, server, filters, tierFilter, enchantFilter, qualityFilter, sortBy, refreshKey]);
+  }, [page, server, filters, tierFilter, enchantFilter, qualityFilter, sortBy, minProfitPercent, refreshKey]);
 
   const beginReload = () => {
     setLoading(true);
@@ -139,6 +145,7 @@ export default function FlipPage() {
     setTierFilter("");
     setEnchantFilter("");
     setQualityFilter("");
+    setMinProfitPercent("");
     setPage(1);
   };
 
@@ -152,7 +159,8 @@ export default function FlipPage() {
     hasActiveShopFilters(filters) ||
     valueToArray(tierFilter).length > 0 ||
     valueToArray(enchantFilter).length > 0 ||
-    valueToArray(qualityFilter).length > 0;
+    valueToArray(qualityFilter).length > 0 ||
+    minProfitPercent !== "";
 
   const pagination = (
     <div className="d-flex flex-wrap gap-2 align-items-center">
@@ -201,18 +209,30 @@ export default function FlipPage() {
         </h2>
         <div className="d-flex align-items-center gap-2">
           <label className="form-label mb-0 fw-semibold">Sắp xếp:</label>
-          <select
-            className="form-select form-select-sm"
-            value={sortBy}
-            onChange={(event) => {
-              beginReload();
-              setSortBy(event.target.value);
-              setPage(1);
-            }}
-          >
-            <option value="profit">Lãi (số tiền)</option>
-            <option value="profit_percent">Lãi %</option>
-          </select>
+          <div className="btn-group btn-group-sm" role="group" aria-label="Sắp xếp">
+            <button
+              type="button"
+              className={`btn ${sortBy === "profit" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => {
+                beginReload();
+                setSortBy("profit");
+                setPage(1);
+              }}
+            >
+              Lãi (số tiền)
+            </button>
+            <button
+              type="button"
+              className={`btn ${sortBy === "profit_percent" ? "btn-primary" : "btn-outline-primary"}`}
+              onClick={() => {
+                beginReload();
+                setSortBy("profit_percent");
+                setPage(1);
+              }}
+            >
+              Lãi %
+            </button>
+          </div>
         </div>
       </div>
 
@@ -221,6 +241,7 @@ export default function FlipPage() {
       <ShopFilters
         filters={filters}
         filterOptions={filterOptions}
+        filterLabels={filterLabels}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         hasActiveFilters={hasActiveFilters}
@@ -262,6 +283,22 @@ export default function FlipPage() {
             getLabel={(quality) => QUALITY_LABELS[Number(quality)] || quality}
           />
         </div>
+        <div className="col-auto">
+          <label className="form-label fw-semibold mb-1">% lãi ≥</label>
+          <input
+            type="number"
+            className="form-control"
+            min="0"
+            step="1"
+            placeholder="VD: 10"
+            value={minProfitPercent}
+            onChange={(event) => {
+              beginReload();
+              setMinProfitPercent(event.target.value);
+              setPage(1);
+            }}
+          />
+        </div>
       </ShopFilters>
 
       {filterError && <div className="alert alert-danger">Không thể tải tùy chọn bộ lọc: {filterError}</div>}
@@ -301,7 +338,7 @@ export default function FlipPage() {
               ) : (
                 opportunities.map((opportunity) => (
                   <tr
-                    key={`${opportunity.unique_name}-${opportunity.enchant}-${opportunity.quality}-${opportunity.buy_city}-${opportunity.sell_city}`}
+                    key={`${opportunity.unique_name}-${opportunity.enchant}-${opportunity.quality}-${opportunity.buy_city}-${opportunity.sell_city}-${opportunity.is_upgrade ? "upgrade" : "direct"}`}
                   >
                     <td>
                       <strong>{opportunity.english_name || opportunity.unique_name}</strong>
@@ -309,14 +346,27 @@ export default function FlipPage() {
                         {opportunity.unique_name}
                       </div>
                     </td>
-                    <td>{opportunity.enchant}</td>
+                    <td>
+                      {opportunity.enchant}
+                      {opportunity.is_upgrade && (
+                        <div className="text-info fw-semibold" style={{ fontSize: "11px" }}>
+                          Nâng từ .{opportunity.base_enchant}
+                        </div>
+                      )}
+                    </td>
                     <td>{QUALITY_LABELS[opportunity.quality] || opportunity.quality}</td>
                     <td>{opportunity.buy_city}</td>
                     <td>
                       <div>{formatPrice(opportunity.buy_price)}</div>
-                      <div className="text-body-secondary" style={{ fontSize: "11px" }}>
-                        {formatDate(opportunity.buy_price_date)}
-                      </div>
+                      {opportunity.is_upgrade ? (
+                        <div className="text-info" style={{ fontSize: "10px" }}>
+                          Gốc: {formatPrice(opportunity.base_item_price)} + {opportunity.material_count}x {opportunity.material_type === "RUNE" ? "Rune" : opportunity.material_type === "SOUL" ? "Soul" : "Relic"} ({formatPrice(opportunity.material_price)})
+                        </div>
+                      ) : (
+                        <div className="text-body-secondary" style={{ fontSize: "11px" }}>
+                          {formatDate(opportunity.buy_price_date)}
+                        </div>
+                      )}
                     </td>
                     <td>
                       <div>{formatPrice(opportunity.sell_price)}</div>
