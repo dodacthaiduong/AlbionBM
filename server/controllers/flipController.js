@@ -12,9 +12,24 @@ const parseIntegerFilter = (value, { min, max } = {}) => {
   return parsedValue;
 };
 
-const parseEnchantFilter = (value) => parseIntegerFilter(value, { min: 0, max: 4 });
-const parseTierFilter = (value) => parseIntegerFilter(value, { min: 1, max: 8 });
-const parseQualityFilter = (value) => parseIntegerFilter(value, { min: 1, max: 5 });
+const parseIntegerMulti = (value, { min, max } = {}) => {
+  if (typeof value !== "string") return [];
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .filter((part) => {
+      const parsed = Number(part);
+      if (!Number.isInteger(parsed)) return false;
+      if (min !== undefined && parsed < min) return false;
+      if (max !== undefined && parsed > max) return false;
+      return true;
+    });
+};
+
+const parseEnchantFilter = (value) => parseIntegerMulti(value, { min: 0, max: 4 }).join(",");
+const parseTierFilter = (value) => parseIntegerMulti(value, { min: 1, max: 8 }).join(",");
+const parseQualityFilter = (value) => parseIntegerMulti(value, { min: 1, max: 5 }).join(",");
 
 const getFlipOpportunities = async (req, res) => {
   const server =
@@ -58,4 +73,4 @@ const getFlipOpportunities = async (req, res) => {
   }
 };
 
-module.exports = { getFlipOpportunities };
+module.exports = { getFlipOpportunities, _test: { parseIntegerMulti, parseTierFilter, parseEnchantFilter, parseQualityFilter } };
