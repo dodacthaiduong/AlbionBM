@@ -22,8 +22,9 @@ const computeFlipOpportunities = (
       is_upgrade,
       base_enchant,
       base_item_price,
-      material_price,
-      material_price_date,
+      rune_price,
+      soul_price,
+      relic_price,
       shop_category,
       tier,
     } = variant;
@@ -33,11 +34,29 @@ const computeFlipOpportunities = (
 
     let buyPrice;
     let buyPriceDate = buy ? buy.sell_price_min_date : null;
+    let materials = [];
 
     if (is_upgrade) {
-      if (!Number.isFinite(base_item_price) || !Number.isFinite(material_price)) continue;
+      if (!Number.isFinite(base_item_price)) continue;
       const materialCount = ["armors", "bags"].includes(shop_category) ? 192 : 96;
-      buyPrice = base_item_price + materialCount * material_price;
+      const materialDefs = [
+        { step: 0, type: "RUNE", price: rune_price },
+        { step: 1, type: "SOUL", price: soul_price },
+        { step: 2, type: "RELIC", price: relic_price },
+      ];
+      let materialCost = 0;
+      let valid = true;
+      for (let e = base_enchant; e < enchant; e++) {
+        const def = materialDefs.find((d) => d.step === e);
+        if (!def || !Number.isFinite(def.price)) {
+          valid = false;
+          break;
+        }
+        materialCost += materialCount * def.price;
+        materials.push({ type: def.type, count: materialCount, price: def.price });
+      }
+      if (!valid) continue;
+      buyPrice = base_item_price + materialCost;
     } else {
       if (!buy || !Number.isFinite(buy.sell_price_min) || buy.city === sell.city) continue;
       buyPrice = buy.sell_price_min;
@@ -67,14 +86,10 @@ const computeFlipOpportunities = (
     };
 
     if (is_upgrade) {
-      const materialCount = ["armors", "bags"].includes(shop_category) ? 192 : 96;
       opp.is_upgrade = true;
       opp.base_enchant = base_enchant;
       opp.base_item_price = base_item_price;
-      opp.material_price = material_price;
-      opp.material_count = materialCount;
-      opp.material_type = base_enchant === 0 ? "RUNE" : base_enchant === 1 ? "SOUL" : "RELIC";
-      opp.material_name = `T${tier}_${opp.material_type}`;
+      opp.materials = materials;
     }
 
     opportunities.push(opp);
