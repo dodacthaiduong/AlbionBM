@@ -5,6 +5,8 @@ import {
   SHOP_FILTER_FIELDS,
   createEmptyShopFilters,
   hasActiveShopFilters,
+  valueToArray,
+  arrayToValue,
 } from "../utils/shopFilters";
 import { getFlipOpportunities, getShopFilterOptions } from "../services/api";
 
@@ -148,9 +150,9 @@ export default function FlipPage() {
 
   const hasActiveFilters =
     hasActiveShopFilters(filters) ||
-    tierFilter !== "" ||
-    enchantFilter !== "" ||
-    qualityFilter !== "";
+    valueToArray(tierFilter).length > 0 ||
+    valueToArray(enchantFilter).length > 0 ||
+    valueToArray(qualityFilter).length > 0;
 
   const pagination = (
     <div className="d-flex flex-wrap gap-2 align-items-center">
@@ -227,14 +229,15 @@ export default function FlipPage() {
           <label className="form-label fw-semibold mb-1">Tier</label>
           <select
             className="form-select"
-            value={tierFilter}
+            multiple
+            size={4}
+            value={valueToArray(tierFilter)}
             onChange={(event) => {
               beginReload();
-              setTierFilter(event.target.value);
+              setTierFilter(arrayToValue(Array.from(event.target.selectedOptions, (o) => o.value)));
               setPage(1);
             }}
           >
-            <option value="">Tất cả</option>
             {TIER_OPTIONS.map((tier) => (
               <option key={tier} value={tier}>
                 {tier}
@@ -246,14 +249,15 @@ export default function FlipPage() {
           <label className="form-label fw-semibold mb-1">Enchant</label>
           <select
             className="form-select"
-            value={enchantFilter}
+            multiple
+            size={4}
+            value={valueToArray(enchantFilter)}
             onChange={(event) => {
               beginReload();
-              setEnchantFilter(event.target.value);
+              setEnchantFilter(arrayToValue(Array.from(event.target.selectedOptions, (o) => o.value)));
               setPage(1);
             }}
           >
-            <option value="">Tất cả</option>
             {ENCHANT_OPTIONS.map((enchant) => (
               <option key={enchant} value={enchant}>
                 {enchant}
@@ -265,14 +269,15 @@ export default function FlipPage() {
           <label className="form-label fw-semibold mb-1">Quality</label>
           <select
             className="form-select"
-            value={qualityFilter}
+            multiple
+            size={4}
+            value={valueToArray(qualityFilter)}
             onChange={(event) => {
               beginReload();
-              setQualityFilter(event.target.value);
+              setQualityFilter(arrayToValue(Array.from(event.target.selectedOptions, (o) => o.value)));
               setPage(1);
             }}
           >
-            <option value="">Tất cả</option>
             {QUALITY_OPTIONS.map((quality) => (
               <option key={quality} value={quality}>
                 {QUALITY_LABELS[quality] || quality}
