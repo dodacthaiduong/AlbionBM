@@ -338,7 +338,7 @@ export default function FlipPage() {
               ) : (
                 opportunities.map((opportunity) => (
                   <tr
-                    key={`${opportunity.unique_name}-${opportunity.enchant}-${opportunity.quality}-${opportunity.buy_city}-${opportunity.sell_city}-${opportunity.is_upgrade ? "upgrade" : "direct"}`}
+                    key={`${opportunity.unique_name}-${opportunity.enchant}-${opportunity.quality}-${opportunity.buy_city}-${opportunity.sell_city}-${opportunity.is_upgrade ? `upgrade-${opportunity.base_enchant}` : "direct"}`}
                   >
                     <td>
                       <strong>{opportunity.english_name || opportunity.unique_name}</strong>
@@ -360,7 +360,12 @@ export default function FlipPage() {
                       <div>{formatPrice(opportunity.buy_price)}</div>
                       {opportunity.is_upgrade ? (
                         <div className="text-info" style={{ fontSize: "10px" }}>
-                          Gốc: {formatPrice(opportunity.base_item_price)} + {opportunity.material_count}x {opportunity.material_type === "RUNE" ? "Rune" : opportunity.material_type === "SOUL" ? "Soul" : "Relic"} ({formatPrice(opportunity.material_price)})
+                          Gốc: {formatPrice(opportunity.base_item_price)}
+                          {opportunity.materials.map((material) => (
+                            <div key={material.type}>
+                              + {material.count}x {material.type === "RUNE" ? "Rune" : material.type === "SOUL" ? "Soul" : "Relic"} ({formatPrice(material.price)})
+                            </div>
+                          ))}
                         </div>
                       ) : (
                         <div className="text-body-secondary" style={{ fontSize: "11px" }}>
