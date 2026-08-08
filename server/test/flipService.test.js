@@ -41,7 +41,9 @@ test("computeFlipOpportunities tính lời sau thuế và lọc flip không lờ
     buy_city: "Thetford",
     sell_city: "Caerleon",
     buy_price: 100,
+    buy_price_date: undefined,
     sell_price: 200,
+    sell_price_date: undefined,
     profit: 87,
     profit_percent: 87,
   });
