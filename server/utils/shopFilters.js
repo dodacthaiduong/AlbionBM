@@ -32,8 +32,39 @@ const buildShopFilterConditions = (
   return { conditions, values };
 };
 
+const parseMultiValue = (value) => {
+  if (typeof value !== "string") return [];
+  return value
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part !== "");
+};
+
+const buildMultiValueConditions = (
+  filters = {},
+  { tableAlias = "items", startIndex = 1 } = {}
+) => {
+  const values = [];
+  const conditions = [];
+  const keys = [...SHOP_FILTER_FIELDS, "tier", "enchant", "quality"];
+
+  for (const key of keys) {
+    const parts = parseMultiValue(filters[key]);
+    if (parts.length === 0) continue;
+    const placeholders = parts
+      .map((_, index) => `$${startIndex + values.length + index}`)
+      .join(",");
+    values.push(...parts);
+    conditions.push(`${tableAlias}.${key} IN (${placeholders})`);
+  }
+
+  return { conditions, values };
+};
+
 module.exports = {
   SHOP_FILTER_FIELDS,
   parseShopFilters,
   buildShopFilterConditions,
+  parseMultiValue,
+  buildMultiValueConditions,
 };
