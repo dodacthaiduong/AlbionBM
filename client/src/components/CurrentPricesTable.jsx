@@ -87,6 +87,7 @@ export default function CurrentPricesTable({ server, refreshKey }) {
     DEFAULT_MIN_PRICE_DISCOUNT_PERCENT
   );
   const [filterOptions, setFilterOptions] = useState([]);
+  const [filterLabels, setFilterLabels] = useState({});
   const [filterError, setFilterError] = useState(null);
 
   useEffect(() => {
@@ -94,7 +95,10 @@ export default function CurrentPricesTable({ server, refreshKey }) {
 
     getShopFilterOptions()
       .then((data) => {
-        if (active) setFilterOptions(data.options);
+        if (active) {
+          setFilterOptions(data.options);
+          setFilterLabels(data.labels || {});
+        }
       })
       .catch((requestError) => {
         if (active) setFilterError(requestError.message);
@@ -268,6 +272,7 @@ export default function CurrentPricesTable({ server, refreshKey }) {
         <ShopFilters
           filters={filters}
           filterOptions={filterOptions}
+          filterLabels={filterLabels}
           onFilterChange={handleFilterChange}
           onClearFilters={clearFilters}
           hasActiveFilters={hasActiveFilters}

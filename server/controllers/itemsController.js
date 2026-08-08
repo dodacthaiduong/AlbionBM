@@ -16,8 +16,8 @@ const getAllItems = async (req, res) => {
 
 const getShopFilterOptions = async (req, res) => {
   try {
-    const options = await itemsModel.getShopFilterOptions();
-    res.json({ options });
+    const { options, labels } = await itemsModel.getShopFilterOptions();
+    res.json({ options, labels });
   } catch (err) {
     console.error("Lỗi getShopFilterOptions:", err.message);
     res.status(500).json({ error: "Lỗi server khi lấy tùy chọn bộ lọc" });

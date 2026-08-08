@@ -1,5 +1,6 @@
 const pool = require("../config/db");
 const { buildShopFilterConditions } = require("../utils/shopFilters");
+const { getOrBuildLabels } = require("../utils/shopLabels");
 
 const getAllItems = async (page = 1, limit = 50, filters = {}) => {
   const offset = (page - 1) * limit;
@@ -50,7 +51,12 @@ const getShopFilterOptions = async () => {
               shop_subcategory2, shop_subcategory3`
   );
 
-  return result.rows;
+  const labels = await getOrBuildLabels(pool);
+
+  return {
+    options: result.rows,
+    labels,
+  };
 };
 
 const getItemByUniqueName = async (uniqueName) => {

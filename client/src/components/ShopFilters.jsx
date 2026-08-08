@@ -9,6 +9,7 @@ import MultiSelectDropdown from "./MultiSelectDropdown";
 export default function ShopFilters({
   filters,
   filterOptions,
+  filterLabels = {},
   onFilterChange,
   onClearFilters,
   hasActiveFilters: hasActiveFiltersOverride,
@@ -37,6 +38,7 @@ export default function ShopFilters({
                 value={filters[field.key]}
                 onChange={(csvValue) => onFilterChange(index, csvValue)}
                 options={getOptionsForFilter(index)}
+                getLabel={(option) => filterLabels[field.key]?.[option] || option}
               />
             </div>
           ))}

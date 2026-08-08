@@ -132,6 +132,7 @@ export default function ItemsTable() {
   const [totalPages, setTotalPages] = useState(0);
   const [filters, setFilters] = useState(createEmptyShopFilters);
   const [filterOptions, setFilterOptions] = useState([]);
+  const [filterLabels, setFilterLabels] = useState({});
   const [filterError, setFilterError] = useState(null);
 
   useEffect(() => {
@@ -139,7 +140,10 @@ export default function ItemsTable() {
 
     getShopFilterOptions()
       .then((data) => {
-        if (active) setFilterOptions(data.options);
+        if (active) {
+          setFilterOptions(data.options);
+          setFilterLabels(data.labels || {});
+        }
       })
       .catch((err) => {
         if (active) setFilterError(err.message);
@@ -243,6 +247,7 @@ export default function ItemsTable() {
       <ShopFilters
         filters={filters}
         filterOptions={filterOptions}
+        filterLabels={filterLabels}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
       />
