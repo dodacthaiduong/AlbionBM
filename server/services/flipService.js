@@ -78,7 +78,7 @@ const computeFlipOpportunities = (
       buy_city: is_upgrade ? variant.buy.city : buy.city,
       sell_city: sell.city,
       buy_price: buyPrice,
-      buy_price_date: is_upgrade ? (variant.buy.sell_price_min_date || material_price_date) : buy.sell_price_min_date,
+      buy_price_date: is_upgrade ? buyPriceDate : buy.sell_price_min_date,
       sell_price: sellPrice,
       sell_price_date: sell.sell_price_min_date,
       profit,
