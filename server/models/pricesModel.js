@@ -152,13 +152,13 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
 };
 
 const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant = null, quality = null }) => {
-  let baseEnchants = [0, 1, 2];
+  let targetEnchants = [1, 2, 3];
   if (enchant !== null && enchant !== "") {
-    const targetEnchants = String(enchant).split(",").map((part) => Number(part.trim()));
-    baseEnchants = targetEnchants
-      .map((e) => e - 1)
-      .filter((e) => e >= 0 && e <= 2);
-    if (baseEnchants.length === 0) {
+    targetEnchants = String(enchant)
+      .split(",")
+      .map((part) => Number(part.trim()))
+      .filter((e) => e >= 1 && e <= 3);
+    if (targetEnchants.length === 0) {
       return [];
     }
   }
@@ -186,8 +186,8 @@ const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant =
     "buy.city IS DISTINCT FROM 'Black Market'",
     "buy.sell_price_min IS NOT NULL",
     "bm.sell_price_min IS NOT NULL",
-    "mat.sell_price_min IS NOT NULL",
-    `buy.enchant IN (${baseEnchants.join(",")})`,
+    `bm.enchant IN (${targetEnchants.join(",")})`,
+    "bm.enchant > buy.enchant",
     "items.tier >= 4",
     "items.shop_category IN ('armors', 'bags', 'head', 'shoes', 'capes', 'offhands')",
     ...itemConditions,
@@ -200,7 +200,7 @@ const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant =
     SELECT buy.unique_name,
            items.localized_names ->> 'EN-US' AS english_name,
            buy.enchant AS base_enchant,
-           (buy.enchant + 1) AS target_enchant,
+           bm.enchant AS target_enchant,
            buy.quality,
            buy.city AS buy_city,
            buy.sell_price_min AS base_item_price,
@@ -210,26 +210,36 @@ const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant =
            bm.sell_price_min_date AS sell_price_date,
            items.shop_category,
            items.tier,
-           mat.sell_price_min AS material_price,
-           mat.sell_price_min_date AS material_price_date
+           rune.sell_price_min AS rune_price,
+           soul.sell_price_min AS soul_price,
+           relic.sell_price_min AS relic_price
     FROM item_prices_current AS buy
     JOIN items ON items.unique_name = buy.unique_name
     JOIN item_prices_current AS bm
       ON bm.server = buy.server
      AND bm.unique_name = buy.unique_name
-     AND bm.enchant = buy.enchant + 1
+     AND bm.enchant > buy.enchant
+     AND bm.enchant <= 3
      AND bm.quality = 1
      AND bm.city = 'Black Market'
-    JOIN item_prices_current AS mat
-      ON mat.server = buy.server
-     AND mat.city = buy.city
-     AND mat.quality = 1
-     AND mat.enchant = 0
-     AND mat.unique_name = CASE
-         WHEN buy.enchant = 0 THEN 'T' || items.tier || '_RUNE'
-         WHEN buy.enchant = 1 THEN 'T' || items.tier || '_SOUL'
-         WHEN buy.enchant = 2 THEN 'T' || items.tier || '_RELIC'
-       END
+    LEFT JOIN item_prices_current AS rune
+      ON rune.server = buy.server
+     AND rune.city = buy.city
+     AND rune.quality = 1
+     AND rune.enchant = 0
+     AND rune.unique_name = 'T' || items.tier || '_RUNE'
+    LEFT JOIN item_prices_current AS soul
+      ON soul.server = buy.server
+     AND soul.city = buy.city
+     AND soul.quality = 1
+     AND soul.enchant = 0
+     AND soul.unique_name = 'T' || items.tier || '_SOUL'
+    LEFT JOIN item_prices_current AS relic
+      ON relic.server = buy.server
+     AND relic.city = buy.city
+     AND relic.quality = 1
+     AND relic.enchant = 0
+     AND relic.unique_name = 'T' || items.tier || '_RELIC'
     WHERE ${whereClause}
   `;
 
@@ -252,8 +262,9 @@ const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant =
     is_upgrade: true,
     base_enchant: row.base_enchant,
     base_item_price: row.base_item_price,
-    material_price: row.material_price,
-    material_price_date: row.material_price_date,
+    rune_price: row.rune_price,
+    soul_price: row.soul_price,
+    relic_price: row.relic_price,
     shop_category: row.shop_category,
     tier: row.tier,
   }));
