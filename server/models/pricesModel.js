@@ -1,5 +1,5 @@
 const pool = require("../config/db");
-const { buildShopFilterConditions } = require("../utils/shopFilters");
+const { buildShopFilterConditions, buildMultiValueConditions } = require("../utils/shopFilters");
 
 const getCurrentPrices = async ({
   server,
@@ -85,28 +85,23 @@ const getCurrentPrices = async ({
   };
 };
 
+const buildFlipWhere = ({ server, filters = {}, tier = null, enchant = null, quality = null }) => {
+  const { conditions: itemConditions, values: itemValues } = buildMultiValueConditions(
+    { ...filters, tier },
+    { tableAlias: "items", startIndex: 2 }
+  );
+  const { conditions: priceConditions, values: priceValues } = buildMultiValueConditions(
+    { enchant, quality },
+    { tableAlias: "prices", startIndex: 2 + itemValues.length }
+  );
+  const values = [...itemValues, ...priceValues];
+  const conditions = ["prices.server = $1", "prices.sell_price_min IS NOT NULL", ...itemConditions, ...priceConditions];
+  return { whereClause: conditions.join(" AND "), values };
+};
+
 const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, quality = null }) => {
-  const { conditions: filterConditions, values: filterValues } =
-    buildShopFilterConditions(filters, { startIndex: 2 });
+  const { whereClause, values: filterValues } = buildFlipWhere({ server, filters, tier, enchant, quality });
   const values = [server, ...filterValues];
-  const conditions = ["prices.server = $1", "prices.sell_price_min IS NOT NULL", ...filterConditions];
-
-  if (tier !== null) {
-    values.push(tier);
-    conditions.push(`items.tier = $${values.length}`);
-  }
-
-  if (enchant !== null) {
-    values.push(enchant);
-    conditions.push(`prices.enchant = $${values.length}`);
-  }
-
-  if (quality !== null) {
-    values.push(quality);
-    conditions.push(`prices.quality = $${values.length}`);
-  }
-
-  const whereClause = conditions.join(" AND ");
   const sellCity = "Black Market";
 
   const result = await pool.query(
@@ -156,4 +151,4 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
   }));
 };
 
-module.exports = { getCurrentPrices, getFlipRows };
+module.exports = { getCurrentPrices, getFlipRows, _test: { buildFlipWhere } };
