@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PriceUpdatePanel from "../components/PriceUpdatePanel";
 import ShopFilters from "../components/ShopFilters";
 import {
   SHOP_FILTER_FIELDS,
@@ -18,12 +19,6 @@ const QUALITY_LABELS = {
 const ENCHANT_OPTIONS = [0, 1, 2, 3, 4];
 const TIER_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
 const QUALITY_OPTIONS = [1, 2, 3, 4, 5];
-
-const SERVERS = [
-  { value: "asia", label: "Asia" },
-  { value: "america", label: "America" },
-  { value: "europe", label: "Europe" },
-];
 
 const formatPrice = (price) =>
   price === null || price === undefined
@@ -94,6 +89,11 @@ export default function FlipPage() {
     setError("");
   };
 
+  const reloadOpportunities = () => {
+    beginReload();
+    setPage(1);
+  };
+
   const changePage = (nextPage) => {
     beginReload();
     setPage(nextPage);
@@ -125,9 +125,9 @@ export default function FlipPage() {
     setPage(1);
   };
 
-  const handleServerChange = (event) => {
+  const handleServerChange = (value) => {
     beginReload();
-    setServer(event.target.value);
+    setServer(value);
     setPage(1);
   };
 
@@ -167,20 +167,18 @@ export default function FlipPage() {
 
   return (
     <div>
+      <div className="mb-4">
+        <PriceUpdatePanel
+          server={server}
+          onServerChange={handleServerChange}
+          onUpdateFinished={reloadOpportunities}
+        />
+      </div>
+
       <div className="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
         <h2 className="h4 mb-0">
           Cơ hội flip — {server.toUpperCase()} ({total})
         </h2>
-        <div className="d-flex align-items-center gap-2">
-          <label className="form-label fw-semibold mb-0">Server</label>
-          <select className="form-select form-select-sm" value={server} onChange={handleServerChange}>
-            {SERVERS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
       </div>
 
       {error && <div className="alert alert-danger">Lỗi: {error}</div>}
@@ -265,22 +263,21 @@ export default function FlipPage() {
                 <th>Quality</th>
                 <th>Thành mua</th>
                 <th>Giá mua</th>
-                <th>Thành bán</th>
-                <th>Giá bán</th>
-                <th>Lời</th>
+                <th>Giá black market thu mua</th>
+                <th>Lãi (đã trừ 6.5% thuế sell order)</th>
                 <th>Lời %</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="9" className="text-center text-body-secondary py-4">
+                  <td colSpan="8" className="text-center text-body-secondary py-4">
                     Đang tính cơ hội flip...
                   </td>
                 </tr>
               ) : opportunities.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="text-center text-body-secondary py-4">
+                  <td colSpan="8" className="text-center text-body-secondary py-4">
                     {hasActiveFilters
                       ? "Không có cơ hội flip phù hợp với bộ lọc hiện tại."
                       : "Chưa có cơ hội flip cho server này. Hãy cập nhật giá trước."}
@@ -301,7 +298,6 @@ export default function FlipPage() {
                     <td>{QUALITY_LABELS[opportunity.quality] || opportunity.quality}</td>
                     <td>{opportunity.buy_city}</td>
                     <td>{formatPrice(opportunity.buy_price)}</td>
-                    <td>{opportunity.sell_city}</td>
                     <td>{formatPrice(opportunity.sell_price)}</td>
                     <td className="fw-semibold">{formatPrice(opportunity.profit)}</td>
                     <td>
