@@ -18,3 +18,13 @@ export const getUniqueValues = (rows, key) =>
   [...new Set(rows.map((row) => row[key]).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b)
   );
+
+export const valueToArray = (value) => {
+  if (!value) return [];
+  return String(value)
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+};
+
+export const arrayToValue = (parts) => parts.join(",");

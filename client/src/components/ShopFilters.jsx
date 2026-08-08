@@ -2,6 +2,8 @@ import {
   SHOP_FILTER_FIELDS,
   getUniqueValues,
   hasActiveShopFilters,
+  valueToArray,
+  arrayToValue,
 } from "../utils/shopFilters";
 
 export default function ShopFilters({
@@ -14,11 +16,11 @@ export default function ShopFilters({
 }) {
   const getOptionsForFilter = (index) => {
     const matchingRows = filterOptions.filter((row) =>
-      SHOP_FILTER_FIELDS.slice(0, index).every(
-        ({ key }) => !filters[key] || row[key] === filters[key]
-      )
+      SHOP_FILTER_FIELDS.slice(0, index).every(({ key }) => {
+        const activeValues = valueToArray(filters[key]);
+        return activeValues.length === 0 || activeValues.includes(row[key]);
+      })
     );
-
     return getUniqueValues(matchingRows, SHOP_FILTER_FIELDS[index].key);
   };
 
@@ -33,16 +35,25 @@ export default function ShopFilters({
               <label className="form-label fw-semibold mb-1">{field.label}</label>
               <select
                 className="form-select"
-                value={filters[field.key] || ""}
-                onChange={(event) => onFilterChange(index, event.target.value)}
+                multiple
+                size={4}
+                value={valueToArray(filters[field.key])}
+                onChange={(event) =>
+                  onFilterChange(
+                    index,
+                    arrayToValue(Array.from(event.target.selectedOptions, (o) => o.value))
+                  )
+                }
               >
-                <option value="">Tất cả</option>
                 {getOptionsForFilter(index).map((option) => (
                   <option key={option} value={option}>
                     {option}
                   </option>
                 ))}
               </select>
+              <div className="form-text">
+                Giữ Ctrl (hoặc Cmd) để chọn nhiều. Bỏ chọn hết = Tất cả.
+              </div>
             </div>
           ))}
         </div>
