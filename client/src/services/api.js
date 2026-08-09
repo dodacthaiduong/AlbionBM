@@ -1,8 +1,9 @@
 import axios from "axios";
+import { getClientConfig } from "../config/env.js";
 
-const api = axios.create({
-  baseURL: "/api",
-});
+const { apiBaseUrl } = getClientConfig(import.meta.env);
+
+const api = axios.create({ baseURL: apiBaseUrl });
 
 export const getAllItems = async (page = 1, limit = 50, filters = {}) => {
   const res = await api.get("/items", {
