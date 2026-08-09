@@ -14,3 +14,23 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+## Local Setup & Environment Variables
+
+Copy the environment templates and install dependencies:
+
+```bash
+cp server/.env.example server/.env
+cp client/.env.example client/.env
+npm --prefix server install
+npm --prefix client install
+npm --prefix server run dev
+npm --prefix client run dev
+```
+
+Important notes about environment configuration:
+
+1. Deployed environments must replace all endpoint values in the environment (server/.env variables on the server host; VITE_* variables in the client build environment).
+2. VITE_* values are embedded at client build time, so the client must be rebuilt after changing them.
+3. Secrets belong only in server environment variables; never put secrets in VITE_* variables (they are exposed to the browser).
+4. PG_PASSWORD must never be committed; server/.env and client/.env are gitignored.
