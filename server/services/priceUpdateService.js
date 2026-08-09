@@ -1,11 +1,8 @@
 const crypto = require("node:crypto");
 const pool = require("../config/db");
+const { getServerConfig } = require("../config/env");
 
-const SERVER_BASE_URLS = Object.freeze({
-  asia: "https://east.albion-online-data.com",
-  america: "https://west.albion-online-data.com",
-  europe: "https://europe.albion-online-data.com",
-});
+const { albionApiBaseUrls: SERVER_BASE_URLS } = getServerConfig();
 
 const LOCATIONS = Object.freeze([
   "Caerleon",

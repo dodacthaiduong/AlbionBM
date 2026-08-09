@@ -1,5 +1,12 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+
+process.env.PORT = "3001";
+process.env.CORS_ORIGIN = "http://localhost:5173";
+process.env.ALBION_API_ASIA_URL = "https://prices.internal.example.com";
+process.env.ALBION_API_AMERICA_URL = "https://america.example.com";
+process.env.ALBION_API_EUROPE_URL = "https://europe.example.com";
+
 const { _test } = require("../controllers/flipController");
 
 test("parseIntegerMulti giữ danh sách số hợp lệ trong khoảng", () => {

@@ -3,11 +3,12 @@ const express = require("express");
 const cors = require("cors");
 const itemsRoutes = require("./routes/items");
 const pricesRoutes = require("./routes/prices");
+const { getServerConfig } = require("./config/env");
 
 const app = express();
-const PORT = 3001;
+const config = getServerConfig();
 
-app.use(cors());
+app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json());
 
 app.get("/api/hello", (req, res) => {
@@ -17,6 +18,6 @@ app.get("/api/hello", (req, res) => {
 app.use("/api/items", itemsRoutes);
 app.use("/api/prices", pricesRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(config.port, () => {
+  console.log(`Server running on port ${config.port}`);
 });

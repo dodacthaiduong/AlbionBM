@@ -1,5 +1,12 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+
+process.env.PORT = "3001";
+process.env.CORS_ORIGIN = "http://localhost:5173";
+process.env.ALBION_API_ASIA_URL = "https://prices.internal.example.com";
+process.env.ALBION_API_AMERICA_URL = "https://america.example.com";
+process.env.ALBION_API_EUROPE_URL = "https://europe.example.com";
+
 const { _test } = require("../services/priceUpdateService");
 
 test("generateItemEntries sinh đủ enchant từ 0 đến max_enchant", () => {
@@ -107,4 +114,17 @@ test("mapApiRows giữ dòng toàn giá 0 để xóa giá current đã cũ", () 
   assert.equal(rows.length, 1);
   assert.equal(rows[0].sellPriceMin, null);
   assert.equal(rows[0].buyPriceMax, null);
+});
+
+test("SERVER_BASE_URLS uses configured region endpoint", () => {
+  assert.equal(_test.SERVER_BASE_URLS.asia, "https://prices.internal.example.com");
+});
+
+test("createBatches preserves injected endpoint", () => {
+  const configuredUrl = _test.SERVER_BASE_URLS.asia;
+  const entry = { itemId: "T4_BAG", uniqueName: "T4_BAG", enchant: 0 };
+  const [batch] = _test.createBatches(configuredUrl, [entry], [1]);
+
+  assert.match(batch.url, /^https:\/\/prices\.internal\.example\.com\/api\/v2\/stats\/prices\//);
+  assert.doesNotMatch(batch.url, /albion-online-data\.com/);
 });
