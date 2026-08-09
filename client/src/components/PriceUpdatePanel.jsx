@@ -4,6 +4,7 @@ import {
   getPriceUpdateStatus,
   startPriceUpdate,
 } from "../services/api";
+import { getErrorMessage } from "../utils/errors.js";
 
 const SERVERS = [
   { value: "asia", label: "Asia" },
@@ -19,9 +20,6 @@ const STATUS_LABELS = {
   completed_with_errors: "Hoàn tất một phần",
   failed: "Thất bại",
 };
-
-const getErrorMessage = (error) =>
-  error.response?.data?.error || error.message || "Đã xảy ra lỗi không xác định.";
 
 export default function PriceUpdatePanel({ server, onServerChange, onUpdateFinished }) {
   const [job, setJob] = useState(null);

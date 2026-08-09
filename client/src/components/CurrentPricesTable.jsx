@@ -6,6 +6,7 @@ import {
   hasActiveShopFilters,
 } from "../utils/shopFilters";
 import { getCurrentPrices, getShopFilterOptions } from "../services/api";
+import { getErrorMessage } from "../utils/errors.js";
 
 const PAGE_SIZE = 50;
 const QUALITY_LABELS = {
@@ -129,7 +130,7 @@ export default function CurrentPricesTable({ server, refreshKey }) {
       })
       .catch((requestError) => {
         if (!active) return;
-        setError(requestError.response?.data?.error || requestError.message);
+        setError(getErrorMessage(requestError));
         setLoading(false);
       });
 
@@ -218,7 +219,7 @@ export default function CurrentPricesTable({ server, refreshKey }) {
         setTotalPages(data.totalPages);
       })
       .catch((requestError) => {
-        setError(requestError.response?.data?.error || requestError.message);
+        setError(getErrorMessage(requestError));
       })
       .finally(() => setLoading(false));
   };

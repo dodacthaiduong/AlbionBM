@@ -9,6 +9,7 @@ import {
   valueToArray,
 } from "../utils/shopFilters";
 import { getFlipOpportunities, getShopFilterOptions } from "../services/api";
+import { getErrorMessage } from "../utils/errors.js";
 
 const PAGE_SIZE = 50;
 const ENCHANT_OPTIONS = [0, 1, 2, 3, 4];
@@ -88,7 +89,7 @@ export default function FlipPage() {
       })
       .catch((requestError) => {
         if (!active) return;
-        setError(requestError.response?.data?.error || requestError.message);
+        setError(getErrorMessage(requestError));
         setLoading(false);
       });
 
