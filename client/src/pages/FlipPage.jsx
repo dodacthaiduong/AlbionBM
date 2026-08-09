@@ -11,16 +11,8 @@ import {
 import { getFlipOpportunities, getShopFilterOptions } from "../services/api";
 
 const PAGE_SIZE = 50;
-const QUALITY_LABELS = {
-  1: "Normal",
-  2: "Good",
-  3: "Outstanding",
-  4: "Excellent",
-  5: "Masterpiece",
-};
 const ENCHANT_OPTIONS = [0, 1, 2, 3, 4];
 const TIER_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
-const QUALITY_OPTIONS = [1, 2, 3, 4, 5];
 
 const formatPrice = (price) =>
   price === null || price === undefined
@@ -50,7 +42,6 @@ export default function FlipPage() {
   const [filters, setFilters] = useState(createEmptyShopFilters);
   const [tierFilter, setTierFilter] = useState("");
   const [enchantFilter, setEnchantFilter] = useState("");
-  const [qualityFilter, setQualityFilter] = useState("");
   const [sortBy, setSortBy] = useState("profit_percent");
   const [minProfitPercent, setMinProfitPercent] = useState("");
   const [filterOptions, setFilterOptions] = useState([]);
@@ -84,7 +75,6 @@ export default function FlipPage() {
       ...filters,
       tier: tierFilter,
       enchant: enchantFilter,
-      quality: qualityFilter,
       sort: sortBy,
       minProfitPercent,
     })
@@ -105,7 +95,7 @@ export default function FlipPage() {
     return () => {
       active = false;
     };
-  }, [page, server, filters, tierFilter, enchantFilter, qualityFilter, sortBy, minProfitPercent, refreshKey]);
+  }, [page, server, filters, tierFilter, enchantFilter, sortBy, minProfitPercent, refreshKey]);
 
   const beginReload = () => {
     setLoading(true);
@@ -144,7 +134,6 @@ export default function FlipPage() {
     setFilters(createEmptyShopFilters());
     setTierFilter("");
     setEnchantFilter("");
-    setQualityFilter("");
     setMinProfitPercent("");
     setPage(1);
   };
@@ -159,7 +148,6 @@ export default function FlipPage() {
     hasActiveShopFilters(filters) ||
     valueToArray(tierFilter).length > 0 ||
     valueToArray(enchantFilter).length > 0 ||
-    valueToArray(qualityFilter).length > 0 ||
     minProfitPercent !== "";
 
   const pagination = (
@@ -271,19 +259,6 @@ export default function FlipPage() {
           />
         </div>
         <div className="col-auto">
-          <label className="form-label fw-semibold mb-1">Quality</label>
-          <MultiSelectDropdown
-            value={qualityFilter}
-            onChange={(csvValue) => {
-              beginReload();
-              setQualityFilter(csvValue);
-              setPage(1);
-            }}
-            options={QUALITY_OPTIONS.map(String)}
-            getLabel={(quality) => QUALITY_LABELS[Number(quality)] || quality}
-          />
-        </div>
-        <div className="col-auto">
           <label className="form-label fw-semibold mb-1">% lãi ≥</label>
           <input
             type="number"
@@ -312,7 +287,6 @@ export default function FlipPage() {
               <tr>
                 <th>Item</th>
                 <th>Enchant</th>
-                <th>Quality</th>
                 <th>Thành mua</th>
                 <th>Giá mua</th>
                 <th>Giá black market thu mua</th>
@@ -323,13 +297,13 @@ export default function FlipPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="text-center text-body-secondary py-4">
+                  <td colSpan="7" className="text-center text-body-secondary py-4">
                     Đang tính cơ hội flip...
                   </td>
                 </tr>
               ) : opportunities.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center text-body-secondary py-4">
+                  <td colSpan="7" className="text-center text-body-secondary py-4">
                     {hasActiveFilters
                       ? "Không có cơ hội flip phù hợp với bộ lọc hiện tại."
                       : "Chưa có cơ hội flip cho server này. Hãy cập nhật giá trước."}
@@ -354,7 +328,6 @@ export default function FlipPage() {
                         </div>
                       )}
                     </td>
-                    <td>{QUALITY_LABELS[opportunity.quality] || opportunity.quality}</td>
                     <td>{opportunity.buy_city}</td>
                     <td>
                       <div>{formatPrice(opportunity.buy_price)}</div>
