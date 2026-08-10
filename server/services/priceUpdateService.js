@@ -455,25 +455,6 @@ const persistChunk = async (client, rows) => {
     "buy_price_max",
     "buy_price_max_date",
   ];
-  const currentCompared = comparedColumns.map((column) => `current.${column}`).join(", ");
-  const inputCompared = comparedColumns.map((column) => `input.${column}`).join(", ");
-
-  const historyResult = await client.query(
-    `INSERT INTO item_price_history (${inputColumns})
-     SELECT ${DATABASE_COLUMNS.map((column) => `input.${column}`).join(", ")}
-     FROM (VALUES ${valueList.sql}) AS input (${inputColumns})
-     LEFT JOIN item_prices_current AS current
-       ON current.server = input.server
-      AND current.unique_name = input.unique_name
-      AND current.enchant = input.enchant
-      AND current.city = input.city
-      AND current.quality = input.quality
-     WHERE current.unique_name IS NULL
-        OR ROW(${currentCompared}) IS DISTINCT FROM ROW(${inputCompared})
-     RETURNING id`,
-    valueList.values
-  );
-
   const updateAssignments = [...comparedColumns, "fetched_at"]
     .map((column) => `${column} = EXCLUDED.${column}`)
     .join(",\n         ");
@@ -485,28 +466,23 @@ const persistChunk = async (client, rows) => {
     valueList.values
   );
 
-  return {
-    currentRows: currentResult.rowCount,
-    historyRows: historyResult.rowCount,
-  };
+  return { currentRows: currentResult.rowCount };
 };
 
 const persistRows = async (rows) => {
-  if (rows.length === 0) return { currentRows: 0, historyRows: 0 };
+  if (rows.length === 0) return { currentRows: 0 };
 
   const client = await pool.connect();
   let currentRows = 0;
-  let historyRows = 0;
 
   try {
     await client.query("BEGIN");
     for (let index = 0; index < rows.length; index += DATABASE_CHUNK_SIZE) {
       const result = await persistChunk(client, rows.slice(index, index + DATABASE_CHUNK_SIZE));
       currentRows += result.currentRows;
-      historyRows += result.historyRows;
     }
     await client.query("COMMIT");
-    return { currentRows, historyRows };
+    return { currentRows };
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -569,6 +545,34 @@ const processWithConcurrency = async (batches, concurrency, handler) => {
   await Promise.all(Array.from({ length: workerCount }, worker));
 };
 
+const runHistoryPhase = async (job, qualityGroups, baseUrl) => {
+  const endDate = new Date().toISOString().slice(0, 10);
+  const urlBuilder = (urlBase, itemIds, qualities) =>
+    buildHistoryUrl(urlBase, itemIds, qualities, HISTORY_START_DATE, endDate);
+  const batches = [
+    ...createBatches(baseUrl, qualityGroups.get(1), [1], urlBuilder),
+    ...createBatches(baseUrl, qualityGroups.get(5), [1, 2, 3, 4, 5], urlBuilder),
+  ];
+
+  await processWithConcurrency(batches, REQUEST_CONCURRENCY, async (batch, index) => {
+    try {
+      const payload = await fetchBatch(batch.url);
+      const rows = mapHistoryRows(payload, batch, job.server, new Date().toISOString());
+      const count = await persistHistoryRows(rows);
+      job.history_rows += count;
+    } catch (error) {
+      job.failed_batches += 1;
+      job.errors.push({ batch: index + 1, message: error.message });
+      console.error(
+        `[price-update:${job.id}] History batch ${index + 1}/${batches.length} thất bại:`,
+        error.message
+      );
+    } finally {
+      job.completed_batches += 1;
+    }
+  });
+};
+
 const runPriceUpdate = async (job, lockClient) => {
   try {
     job.status = "running";
@@ -576,37 +580,47 @@ const runPriceUpdate = async (job, lockClient) => {
 
     const { items, qualityGroups } = await loadAndPrepareItems();
     const baseUrl = SERVER_BASE_URLS[job.server];
-    const batches = [
+
+    const currentBatches = [
       ...createBatches(baseUrl, qualityGroups.get(1), [1]),
       ...createBatches(baseUrl, qualityGroups.get(5), [1, 2, 3, 4, 5]),
     ];
 
+    const endDate = new Date().toISOString().slice(0, 10);
+    const historyUrlBuilder = (urlBase, itemIds, qualities) =>
+      buildHistoryUrl(urlBase, itemIds, qualities, HISTORY_START_DATE, endDate);
+    const historyBatches = [
+      ...createBatches(baseUrl, qualityGroups.get(1), [1], historyUrlBuilder),
+      ...createBatches(baseUrl, qualityGroups.get(5), [1, 2, 3, 4, 5], historyUrlBuilder),
+    ];
+
     job.total_items = items.length;
     job.total_item_ids = qualityGroups.get(1).length + qualityGroups.get(5).length;
-    job.total_batches = batches.length;
-    job.max_url_bytes = batches.reduce(
-      (maximum, batch) => Math.max(maximum, Buffer.byteLength(batch.url, "utf8")),
-      0
+    job.total_batches = currentBatches.length + historyBatches.length;
+    job.max_url_bytes = Math.max(
+      ...currentBatches.map((batch) => Buffer.byteLength(batch.url, "utf8")),
+      ...historyBatches.map((batch) => Buffer.byteLength(batch.url, "utf8"))
     );
 
-    await processWithConcurrency(batches, REQUEST_CONCURRENCY, async (batch, index) => {
+    await processWithConcurrency(currentBatches, REQUEST_CONCURRENCY, async (batch, index) => {
       try {
         const payload = await fetchBatch(batch.url);
         const rows = mapApiRows(payload, batch, job.server, new Date().toISOString());
         const result = await persistRows(rows);
         job.current_rows += result.currentRows;
-        job.history_rows += result.historyRows;
       } catch (error) {
         job.failed_batches += 1;
         job.errors.push({ batch: index + 1, message: error.message });
         console.error(
-          `[price-update:${job.id}] Batch ${index + 1}/${batches.length} thất bại:`,
+          `[price-update:${job.id}] Batch ${index + 1}/${currentBatches.length} thất bại:`,
           error.message
         );
       } finally {
         job.completed_batches += 1;
       }
     });
+
+    await runHistoryPhase(job, qualityGroups, baseUrl);
 
     job.status = job.failed_batches > 0 ? "completed_with_errors" : "completed";
   } catch (error) {
