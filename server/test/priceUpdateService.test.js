@@ -120,6 +120,30 @@ test("SERVER_BASE_URLS uses configured region endpoint", () => {
   assert.equal(_test.SERVER_BASE_URLS.asia, "https://prices.internal.example.com");
 });
 
+test("buildHistoryUrl tạo URL history với date, end_date, time-scale=24", () => {
+  const url = _test.buildHistoryUrl(
+    "https://east.example.com",
+    ["T4_BAG@1"],
+    [1],
+    "2018-01-01",
+    "2026-08-10"
+  );
+  assert.match(url, /\/api\/v2\/stats\/history\/T4_BAG%401\.json/);
+  assert.match(url, /date=2018-01-01/);
+  assert.match(url, /end_date=2026-08-10/);
+  assert.match(url, /time-scale=24/);
+  assert.match(url, /locations=/);
+  assert.match(url, /qualities=1/);
+});
+
+test("createBatches dùng urlBuilder tùy chỉnh khi được truyền", () => {
+  const entry = { itemId: "T4_BAG", uniqueName: "T4_BAG", enchant: 0 };
+  const urlBuilder = (base, ids, q) =>
+    `https://custom.example.com/history/${ids.join(",")}?q=${q.join(",")}`;
+  const [batch] = _test.createBatches("https://base.example.com", [entry], [1], urlBuilder);
+  assert.match(batch.url, /custom\.example\.com\/history\/T4_BAG/);
+});
+
 test("createBatches preserves injected endpoint", () => {
   const configuredUrl = _test.SERVER_BASE_URLS.asia;
   const entry = { itemId: "T4_BAG", uniqueName: "T4_BAG", enchant: 0 };

@@ -16,6 +16,8 @@ const LOCATIONS = Object.freeze([
 ]);
 
 const MAX_URL_BYTES = 4096;
+const HISTORY_START_DATE = "2018-01-01";
+const HISTORY_TIME_SCALE = "24";
 const REQUEST_TIMEOUT_MS = 20_000;
 const MAX_REQUEST_ATTEMPTS = 3;
 const REQUEST_CONCURRENCY = 3;
@@ -71,13 +73,25 @@ const buildPriceUrl = (baseUrl, itemIds, qualities) => {
   return `${baseUrl}/api/v2/stats/prices/${encodedItemIds}.json?${query.toString()}`;
 };
 
-const createBatches = (baseUrl, entries, qualities) => {
+const buildHistoryUrl = (baseUrl, itemIds, qualities, startDate, endDate) => {
+  const encodedItemIds = itemIds.map((itemId) => encodeURIComponent(itemId)).join(",");
+  const query = new URLSearchParams({
+    date: startDate,
+    end_date: endDate,
+    locations: LOCATIONS.join(","),
+    qualities: qualities.join(","),
+    "time-scale": HISTORY_TIME_SCALE,
+  });
+  return `${baseUrl}/api/v2/stats/history/${encodedItemIds}.json?${query.toString()}`;
+};
+
+const createBatches = (baseUrl, entries, qualities, urlBuilder = buildPriceUrl) => {
   const batches = [];
   let currentEntries = [];
 
   for (const entry of entries) {
     const candidateEntries = [...currentEntries, entry];
-    const candidateUrl = buildPriceUrl(
+    const candidateUrl = urlBuilder(
       baseUrl,
       candidateEntries.map(({ itemId }) => itemId),
       qualities
@@ -92,7 +106,7 @@ const createBatches = (baseUrl, entries, qualities) => {
       throw new Error(`item_id tạo URL vượt quá ${MAX_URL_BYTES} byte: ${entry.itemId}`);
     }
 
-    const currentUrl = buildPriceUrl(
+    const currentUrl = urlBuilder(
       baseUrl,
       currentEntries.map(({ itemId }) => itemId),
       qualities
@@ -100,7 +114,7 @@ const createBatches = (baseUrl, entries, qualities) => {
     batches.push({ entries: currentEntries, qualities, url: currentUrl });
 
     currentEntries = [entry];
-    const singleUrl = buildPriceUrl(baseUrl, [entry.itemId], qualities);
+    const singleUrl = urlBuilder(baseUrl, [entry.itemId], qualities);
     if (Buffer.byteLength(singleUrl, "utf8") > MAX_URL_BYTES) {
       throw new Error(`item_id tạo URL vượt quá ${MAX_URL_BYTES} byte: ${entry.itemId}`);
     }
@@ -110,7 +124,7 @@ const createBatches = (baseUrl, entries, qualities) => {
     batches.push({
       entries: currentEntries,
       qualities,
-      url: buildPriceUrl(
+      url: urlBuilder(
         baseUrl,
         currentEntries.map(({ itemId }) => itemId),
         qualities
@@ -557,6 +571,9 @@ module.exports = {
     MAX_URL_BYTES,
     SERVER_BASE_URLS,
     buildPriceUrl,
+    buildHistoryUrl,
+    HISTORY_START_DATE,
+    HISTORY_TIME_SCALE,
     createBatches,
     generateItemEntries,
     mapApiRows,
