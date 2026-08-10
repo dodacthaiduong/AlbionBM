@@ -11,6 +11,7 @@ test("computeFlipOpportunities tính lời sau thuế và lọc flip không lờ
       quality: 1,
       buy: { city: "Thetford", sell_price_min: 100 },
       sell: { city: "Caerleon", sell_price_min: 200 },
+      bm_avg_30d: 190,
     },
     {
       unique_name: "T5_BAG",
@@ -44,6 +45,7 @@ test("computeFlipOpportunities tính lời sau thuế và lọc flip không lờ
     buy_price_date: undefined,
     sell_price: 200,
     sell_price_date: undefined,
+    bm_avg_30d: 190,
     profit: 87,
     profit_percent: 87,
   });
