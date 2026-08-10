@@ -152,3 +152,64 @@ test("createBatches preserves injected endpoint", () => {
   assert.match(batch.url, /^https:\/\/prices\.internal\.example\.com\/api\/v2\/stats\/prices\//);
   assert.doesNotMatch(batch.url, /albion-online-data\.com/);
 });
+
+test("mapHistoryRows map location→city, tách enchant, chuẩn hóa timestamp", () => {
+  const batch = {
+    entries: [{ itemId: "T4_BAG@1", uniqueName: "T4_BAG", enchant: 1 }],
+    qualities: [1],
+  };
+  const rows = _test.mapHistoryRows(
+    [
+      {
+        item_id: "T4_BAG@1",
+        location: "Caerleon",
+        quality: 1,
+        data: [
+          { item_count: 13, avg_price: 3410, timestamp: "2026-07-11T00:00:00" },
+          { item_count: 5, avg_price: 0, timestamp: 1780000000000 },
+        ],
+      },
+    ],
+    batch,
+    "asia",
+    "2026-08-10T00:00:00.000Z"
+  );
+
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].city, "Caerleon");
+  assert.equal(rows[0].uniqueName, "T4_BAG");
+  assert.equal(rows[0].enchant, 1);
+  assert.equal(rows[0].avgPrice, 3410);
+  assert.equal(rows[0].itemCount, 13);
+  assert.equal(rows[0].priceDate, "2026-07-11T00:00:00.000Z");
+  assert.equal(rows[1].avgPrice, null);
+  assert.equal(rows[1].priceDate, new Date(1780000000000).toISOString());
+});
+
+test("mapHistoryRows bỏ location/quality không hợp lệ", () => {
+  const batch = {
+    entries: [{ itemId: "T4_BAG", uniqueName: "T4_BAG", enchant: 0 }],
+    qualities: [1],
+  };
+  const rows = _test.mapHistoryRows(
+    [
+      {
+        item_id: "T4_BAG",
+        location: "Unknown City",
+        quality: 1,
+        data: [{ item_count: 1, avg_price: 5, timestamp: "2026-07-11T00:00:00" }],
+      },
+      {
+        item_id: "T4_BAG",
+        location: "Caerleon",
+        quality: 3,
+        data: [{ item_count: 1, avg_price: 5, timestamp: "2026-07-11T00:00:00" }],
+      },
+    ],
+    batch,
+    "asia",
+    "2026-08-10T00:00:00.000Z"
+  );
+
+  assert.equal(rows.length, 0);
+});

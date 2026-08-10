@@ -225,6 +225,14 @@ const normalizeApiDate = (value) => {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
+const normalizeHistoryDate = (value) => {
+  if (typeof value === "number") {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  }
+  return normalizeApiDate(value);
+};
+
 const normalizePricePair = (priceValue, dateValue) => {
   const price = Number(priceValue);
   if (!Number.isSafeInteger(price) || price <= 0) return [null, null];
@@ -282,6 +290,41 @@ const mapApiRows = (payload, batch, server, fetchedAt) => {
   }
 
   return [...rowsByKey.values()];
+};
+
+const mapHistoryRows = (payload, batch, server, fetchedAt) => {
+  const entryById = new Map(batch.entries.map((entry) => [entry.itemId, entry]));
+  const allowedCities = new Set(LOCATIONS);
+  const allowedQualities = new Set(batch.qualities);
+  const rows = [];
+
+  for (const record of payload) {
+    const entry = entryById.get(record?.item_id);
+    const quality = Number(record?.quality);
+    if (!entry || !allowedCities.has(record.location) || !allowedQualities.has(quality)) continue;
+
+    for (const point of record.data || []) {
+      const priceDate = normalizeHistoryDate(point?.timestamp);
+      if (!priceDate) continue;
+
+      const avgPrice = Number(point?.avg_price);
+      const itemCount = Number(point?.item_count);
+
+      rows.push({
+        server,
+        uniqueName: entry.uniqueName,
+        enchant: entry.enchant,
+        city: record.location,
+        quality,
+        priceDate,
+        avgPrice: Number.isSafeInteger(avgPrice) && avgPrice > 0 ? avgPrice : null,
+        itemCount: Number.isSafeInteger(itemCount) && itemCount >= 0 ? itemCount : null,
+        fetchedAt,
+      });
+    }
+  }
+
+  return rows;
 };
 
 const DATABASE_COLUMNS = [
@@ -577,6 +620,8 @@ module.exports = {
     createBatches,
     generateItemEntries,
     mapApiRows,
+    mapHistoryRows,
+    normalizeHistoryDate,
     persistChunk,
   },
 };
