@@ -114,7 +114,8 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
             buy.buy_price_date,
             $${values.length + 1} AS sell_city,
             bm.sell_price_min AS sell_price,
-            bm.sell_price_min_date AS sell_price_date
+            bm.sell_price_min_date AS sell_price_date,
+            hist.bm_avg_30d
      FROM (
        SELECT DISTINCT ON (prices.unique_name, prices.enchant, prices.quality)
               prices.unique_name,
@@ -136,6 +137,21 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
       AND bm.enchant = buy.enchant
       AND bm.quality = 1
       AND bm.city = $${values.length + 1}
+     LEFT JOIN (
+       SELECT server,
+              unique_name,
+              enchant,
+              AVG(avg_price)::integer AS bm_avg_30d
+       FROM item_price_history
+       WHERE city = $${values.length + 1}
+         AND quality = 1
+         AND avg_price IS NOT NULL
+         AND price_date >= now() - INTERVAL '30 days'
+       GROUP BY server, unique_name, enchant
+     ) AS hist
+       ON hist.server = buy.server
+      AND hist.unique_name = buy.unique_name
+      AND hist.enchant = buy.enchant
      WHERE bm.sell_price_min IS NOT NULL
        AND bm.city IS DISTINCT FROM buy.city`,
     [...values, sellCity]
@@ -148,6 +164,7 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
     quality: row.quality,
     buy: { city: row.buy_city, sell_price_min: row.buy_price, sell_price_min_date: row.buy_price_date },
     sell: { city: row.sell_city, sell_price_min: row.sell_price, sell_price_min_date: row.sell_price_date },
+    bm_avg_30d: row.bm_avg_30d,
   }));
 };
 
@@ -208,6 +225,7 @@ const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant =
            'Black Market'::text AS sell_city,
            bm.sell_price_min AS sell_price,
            bm.sell_price_min_date AS sell_price_date,
+           hist.bm_avg_30d,
            items.shop_category,
            items.tier,
            rune.sell_price_min AS rune_price,
@@ -222,6 +240,21 @@ const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant =
      AND bm.enchant <= 3
      AND bm.quality = 1
      AND bm.city = 'Black Market'
+    LEFT JOIN (
+      SELECT server,
+             unique_name,
+             enchant,
+             AVG(avg_price)::integer AS bm_avg_30d
+      FROM item_price_history
+      WHERE city = 'Black Market'
+        AND quality = 1
+        AND avg_price IS NOT NULL
+        AND price_date >= now() - INTERVAL '30 days'
+      GROUP BY server, unique_name, enchant
+    ) AS hist
+      ON hist.server = buy.server
+     AND hist.unique_name = buy.unique_name
+     AND hist.enchant = bm.enchant
     LEFT JOIN item_prices_current AS rune
       ON rune.server = buy.server
      AND rune.city = buy.city
@@ -261,6 +294,7 @@ const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant =
     },
     is_upgrade: true,
     base_enchant: row.base_enchant,
+    bm_avg_30d: row.bm_avg_30d,
     base_item_price: row.base_item_price,
     rune_price: row.rune_price,
     soul_price: row.soul_price,

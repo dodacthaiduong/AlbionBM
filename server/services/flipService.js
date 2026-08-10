@@ -81,6 +81,7 @@ const computeFlipOpportunities = (
       buy_price_date: is_upgrade ? buyPriceDate : buy.sell_price_min_date,
       sell_price: sellPrice,
       sell_price_date: sell.sell_price_min_date,
+      bm_avg_30d: variant.bm_avg_30d,
       profit,
       profit_percent: profitPercent,
     };

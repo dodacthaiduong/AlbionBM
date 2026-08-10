@@ -162,7 +162,7 @@ export default function PriceUpdatePanel({ server, onServerChange, onUpdateFinis
               <div className="col-6 col-md-4 col-lg-2">Item IDs: {job.total_item_ids}</div>
               <div className="col-6 col-md-4 col-lg-2">Batch: {job.completed_batches} / {job.total_batches}</div>
               <div className="col-6 col-md-4 col-lg-2">Dòng current: {job.current_rows}</div>
-              <div className="col-6 col-md-4 col-lg-2">Dòng history mới: {job.history_rows}</div>
+              <div className="col-6 col-md-4 col-lg-2">Dòng history: {job.history_rows}</div>
               <div className="col-6 col-md-4 col-lg-2">Batch lỗi: {job.failed_batches}</div>
             </div>
             {job.error_message && <div className="alert alert-danger mt-2 mb-0">{job.error_message}</div>}

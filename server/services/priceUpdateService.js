@@ -16,6 +16,8 @@ const LOCATIONS = Object.freeze([
 ]);
 
 const MAX_URL_BYTES = 4096;
+const HISTORY_START_DATE = "2018-01-01";
+const HISTORY_TIME_SCALE = "24";
 const REQUEST_TIMEOUT_MS = 20_000;
 const MAX_REQUEST_ATTEMPTS = 3;
 const REQUEST_CONCURRENCY = 3;
@@ -71,13 +73,25 @@ const buildPriceUrl = (baseUrl, itemIds, qualities) => {
   return `${baseUrl}/api/v2/stats/prices/${encodedItemIds}.json?${query.toString()}`;
 };
 
-const createBatches = (baseUrl, entries, qualities) => {
+const buildHistoryUrl = (baseUrl, itemIds, qualities, startDate, endDate) => {
+  const encodedItemIds = itemIds.map((itemId) => encodeURIComponent(itemId)).join(",");
+  const query = new URLSearchParams({
+    date: startDate,
+    end_date: endDate,
+    locations: LOCATIONS.join(","),
+    qualities: qualities.join(","),
+    "time-scale": HISTORY_TIME_SCALE,
+  });
+  return `${baseUrl}/api/v2/stats/history/${encodedItemIds}.json?${query.toString()}`;
+};
+
+const createBatches = (baseUrl, entries, qualities, urlBuilder = buildPriceUrl) => {
   const batches = [];
   let currentEntries = [];
 
   for (const entry of entries) {
     const candidateEntries = [...currentEntries, entry];
-    const candidateUrl = buildPriceUrl(
+    const candidateUrl = urlBuilder(
       baseUrl,
       candidateEntries.map(({ itemId }) => itemId),
       qualities
@@ -92,7 +106,7 @@ const createBatches = (baseUrl, entries, qualities) => {
       throw new Error(`item_id tạo URL vượt quá ${MAX_URL_BYTES} byte: ${entry.itemId}`);
     }
 
-    const currentUrl = buildPriceUrl(
+    const currentUrl = urlBuilder(
       baseUrl,
       currentEntries.map(({ itemId }) => itemId),
       qualities
@@ -100,7 +114,7 @@ const createBatches = (baseUrl, entries, qualities) => {
     batches.push({ entries: currentEntries, qualities, url: currentUrl });
 
     currentEntries = [entry];
-    const singleUrl = buildPriceUrl(baseUrl, [entry.itemId], qualities);
+    const singleUrl = urlBuilder(baseUrl, [entry.itemId], qualities);
     if (Buffer.byteLength(singleUrl, "utf8") > MAX_URL_BYTES) {
       throw new Error(`item_id tạo URL vượt quá ${MAX_URL_BYTES} byte: ${entry.itemId}`);
     }
@@ -110,7 +124,7 @@ const createBatches = (baseUrl, entries, qualities) => {
     batches.push({
       entries: currentEntries,
       qualities,
-      url: buildPriceUrl(
+      url: urlBuilder(
         baseUrl,
         currentEntries.map(({ itemId }) => itemId),
         qualities
@@ -211,6 +225,14 @@ const normalizeApiDate = (value) => {
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
 };
 
+const normalizeHistoryDate = (value) => {
+  if (typeof value === "number") {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date.toISOString();
+  }
+  return normalizeApiDate(value);
+};
+
 const normalizePricePair = (priceValue, dateValue) => {
   const price = Number(priceValue);
   if (!Number.isSafeInteger(price) || price <= 0) return [null, null];
@@ -270,6 +292,41 @@ const mapApiRows = (payload, batch, server, fetchedAt) => {
   return [...rowsByKey.values()];
 };
 
+const mapHistoryRows = (payload, batch, server, fetchedAt) => {
+  const entryById = new Map(batch.entries.map((entry) => [entry.itemId, entry]));
+  const allowedCities = new Set(LOCATIONS);
+  const allowedQualities = new Set(batch.qualities);
+  const rows = [];
+
+  for (const record of payload) {
+    const entry = entryById.get(record?.item_id);
+    const quality = Number(record?.quality);
+    if (!entry || !allowedCities.has(record.location) || !allowedQualities.has(quality)) continue;
+
+    for (const point of record.data || []) {
+      const priceDate = normalizeHistoryDate(point?.timestamp);
+      if (!priceDate) continue;
+
+      const avgPrice = Number(point?.avg_price);
+      const itemCount = Number(point?.item_count);
+
+      rows.push({
+        server,
+        uniqueName: entry.uniqueName,
+        enchant: entry.enchant,
+        city: record.location,
+        quality,
+        priceDate,
+        avgPrice: Number.isSafeInteger(avgPrice) && avgPrice > 0 ? avgPrice : null,
+        itemCount: Number.isSafeInteger(itemCount) && itemCount >= 0 ? itemCount : null,
+        fetchedAt,
+      });
+    }
+  }
+
+  return rows;
+};
+
 const DATABASE_COLUMNS = [
   "server",
   "unique_name",
@@ -303,6 +360,56 @@ const PARAMETER_CASTS = [
   "timestamptz",
   "timestamptz",
 ];
+
+const HISTORY_COLUMNS = [
+  "server",
+  "unique_name",
+  "enchant",
+  "city",
+  "quality",
+  "price_date",
+  "avg_price",
+  "item_count",
+  "fetched_at",
+];
+
+const HISTORY_CASTS = [
+  "text",
+  "text",
+  "smallint",
+  "text",
+  "smallint",
+  "timestamptz",
+  "integer",
+  "bigint",
+  "timestamptz",
+];
+
+const getHistoryRowValues = (row) => [
+  row.server,
+  row.uniqueName,
+  row.enchant,
+  row.city,
+  row.quality,
+  row.priceDate,
+  row.avgPrice,
+  row.itemCount,
+  row.fetchedAt,
+];
+
+const buildHistoryValuesClause = (rows) => {
+  const values = [];
+  const groups = rows.map((row) => {
+    const rowValues = getHistoryRowValues(row);
+    const placeholders = rowValues.map((value, index) => {
+      values.push(value);
+      return `$${values.length}::${HISTORY_CASTS[index]}`;
+    });
+    return `(${placeholders.join(", ")})`;
+  });
+
+  return { sql: groups.join(",\n"), values };
+};
 
 const getRowValues = (row) => [
   row.server,
@@ -348,25 +455,6 @@ const persistChunk = async (client, rows) => {
     "buy_price_max",
     "buy_price_max_date",
   ];
-  const currentCompared = comparedColumns.map((column) => `current.${column}`).join(", ");
-  const inputCompared = comparedColumns.map((column) => `input.${column}`).join(", ");
-
-  const historyResult = await client.query(
-    `INSERT INTO item_price_history (${inputColumns})
-     SELECT ${DATABASE_COLUMNS.map((column) => `input.${column}`).join(", ")}
-     FROM (VALUES ${valueList.sql}) AS input (${inputColumns})
-     LEFT JOIN item_prices_current AS current
-       ON current.server = input.server
-      AND current.unique_name = input.unique_name
-      AND current.enchant = input.enchant
-      AND current.city = input.city
-      AND current.quality = input.quality
-     WHERE current.unique_name IS NULL
-        OR ROW(${currentCompared}) IS DISTINCT FROM ROW(${inputCompared})
-     RETURNING id`,
-    valueList.values
-  );
-
   const updateAssignments = [...comparedColumns, "fetched_at"]
     .map((column) => `${column} = EXCLUDED.${column}`)
     .join(",\n         ");
@@ -378,28 +466,62 @@ const persistChunk = async (client, rows) => {
     valueList.values
   );
 
-  return {
-    currentRows: currentResult.rowCount,
-    historyRows: historyResult.rowCount,
-  };
+  return { currentRows: currentResult.rowCount };
 };
 
 const persistRows = async (rows) => {
-  if (rows.length === 0) return { currentRows: 0, historyRows: 0 };
+  if (rows.length === 0) return { currentRows: 0 };
 
   const client = await pool.connect();
   let currentRows = 0;
-  let historyRows = 0;
 
   try {
     await client.query("BEGIN");
     for (let index = 0; index < rows.length; index += DATABASE_CHUNK_SIZE) {
       const result = await persistChunk(client, rows.slice(index, index + DATABASE_CHUNK_SIZE));
       currentRows += result.currentRows;
-      historyRows += result.historyRows;
     }
     await client.query("COMMIT");
-    return { currentRows, historyRows };
+    return { currentRows };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+const persistHistoryChunk = async (client, rows) => {
+  if (rows.length === 0) return 0;
+
+  const { sql, values } = buildHistoryValuesClause(rows);
+  const columns = HISTORY_COLUMNS.join(", ");
+  const result = await client.query(
+    `INSERT INTO item_price_history (${columns})
+     VALUES ${sql}
+     ON CONFLICT (server, unique_name, enchant, city, quality, price_date)
+     DO UPDATE SET avg_price = EXCLUDED.avg_price,
+                   item_count = EXCLUDED.item_count,
+                   fetched_at = EXCLUDED.fetched_at`,
+    values
+  );
+
+  return result.rowCount;
+};
+
+const persistHistoryRows = async (rows) => {
+  if (rows.length === 0) return 0;
+
+  const client = await pool.connect();
+  let count = 0;
+
+  try {
+    await client.query("BEGIN");
+    for (let index = 0; index < rows.length; index += DATABASE_CHUNK_SIZE) {
+      count += await persistHistoryChunk(client, rows.slice(index, index + DATABASE_CHUNK_SIZE));
+    }
+    await client.query("COMMIT");
+    return count;
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -423,6 +545,34 @@ const processWithConcurrency = async (batches, concurrency, handler) => {
   await Promise.all(Array.from({ length: workerCount }, worker));
 };
 
+const runHistoryPhase = async (job, qualityGroups, baseUrl) => {
+  const endDate = new Date().toISOString().slice(0, 10);
+  const urlBuilder = (urlBase, itemIds, qualities) =>
+    buildHistoryUrl(urlBase, itemIds, qualities, HISTORY_START_DATE, endDate);
+  const batches = [
+    ...createBatches(baseUrl, qualityGroups.get(1), [1], urlBuilder),
+    ...createBatches(baseUrl, qualityGroups.get(5), [1, 2, 3, 4, 5], urlBuilder),
+  ];
+
+  await processWithConcurrency(batches, REQUEST_CONCURRENCY, async (batch, index) => {
+    try {
+      const payload = await fetchBatch(batch.url);
+      const rows = mapHistoryRows(payload, batch, job.server, new Date().toISOString());
+      const count = await persistHistoryRows(rows);
+      job.history_rows += count;
+    } catch (error) {
+      job.failed_batches += 1;
+      job.errors.push({ batch: index + 1, message: error.message });
+      console.error(
+        `[price-update:${job.id}] History batch ${index + 1}/${batches.length} thất bại:`,
+        error.message
+      );
+    } finally {
+      job.completed_batches += 1;
+    }
+  });
+};
+
 const runPriceUpdate = async (job, lockClient) => {
   try {
     job.status = "running";
@@ -430,37 +580,47 @@ const runPriceUpdate = async (job, lockClient) => {
 
     const { items, qualityGroups } = await loadAndPrepareItems();
     const baseUrl = SERVER_BASE_URLS[job.server];
-    const batches = [
+
+    const currentBatches = [
       ...createBatches(baseUrl, qualityGroups.get(1), [1]),
       ...createBatches(baseUrl, qualityGroups.get(5), [1, 2, 3, 4, 5]),
     ];
 
+    const endDate = new Date().toISOString().slice(0, 10);
+    const historyUrlBuilder = (urlBase, itemIds, qualities) =>
+      buildHistoryUrl(urlBase, itemIds, qualities, HISTORY_START_DATE, endDate);
+    const historyBatches = [
+      ...createBatches(baseUrl, qualityGroups.get(1), [1], historyUrlBuilder),
+      ...createBatches(baseUrl, qualityGroups.get(5), [1, 2, 3, 4, 5], historyUrlBuilder),
+    ];
+
     job.total_items = items.length;
     job.total_item_ids = qualityGroups.get(1).length + qualityGroups.get(5).length;
-    job.total_batches = batches.length;
-    job.max_url_bytes = batches.reduce(
-      (maximum, batch) => Math.max(maximum, Buffer.byteLength(batch.url, "utf8")),
-      0
+    job.total_batches = currentBatches.length + historyBatches.length;
+    job.max_url_bytes = Math.max(
+      ...currentBatches.map((batch) => Buffer.byteLength(batch.url, "utf8")),
+      ...historyBatches.map((batch) => Buffer.byteLength(batch.url, "utf8"))
     );
 
-    await processWithConcurrency(batches, REQUEST_CONCURRENCY, async (batch, index) => {
+    await processWithConcurrency(currentBatches, REQUEST_CONCURRENCY, async (batch, index) => {
       try {
         const payload = await fetchBatch(batch.url);
         const rows = mapApiRows(payload, batch, job.server, new Date().toISOString());
         const result = await persistRows(rows);
         job.current_rows += result.currentRows;
-        job.history_rows += result.historyRows;
       } catch (error) {
         job.failed_batches += 1;
         job.errors.push({ batch: index + 1, message: error.message });
         console.error(
-          `[price-update:${job.id}] Batch ${index + 1}/${batches.length} thất bại:`,
+          `[price-update:${job.id}] Batch ${index + 1}/${currentBatches.length} thất bại:`,
           error.message
         );
       } finally {
         job.completed_batches += 1;
       }
     });
+
+    await runHistoryPhase(job, qualityGroups, baseUrl);
 
     job.status = job.failed_batches > 0 ? "completed_with_errors" : "completed";
   } catch (error) {
@@ -557,9 +717,15 @@ module.exports = {
     MAX_URL_BYTES,
     SERVER_BASE_URLS,
     buildPriceUrl,
+    buildHistoryUrl,
+    HISTORY_START_DATE,
+    HISTORY_TIME_SCALE,
     createBatches,
     generateItemEntries,
     mapApiRows,
+    mapHistoryRows,
+    normalizeHistoryDate,
     persistChunk,
+    buildHistoryValuesClause,
   },
 };
