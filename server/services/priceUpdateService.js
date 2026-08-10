@@ -361,6 +361,56 @@ const PARAMETER_CASTS = [
   "timestamptz",
 ];
 
+const HISTORY_COLUMNS = [
+  "server",
+  "unique_name",
+  "enchant",
+  "city",
+  "quality",
+  "price_date",
+  "avg_price",
+  "item_count",
+  "fetched_at",
+];
+
+const HISTORY_CASTS = [
+  "text",
+  "text",
+  "smallint",
+  "text",
+  "smallint",
+  "timestamptz",
+  "integer",
+  "bigint",
+  "timestamptz",
+];
+
+const getHistoryRowValues = (row) => [
+  row.server,
+  row.uniqueName,
+  row.enchant,
+  row.city,
+  row.quality,
+  row.priceDate,
+  row.avgPrice,
+  row.itemCount,
+  row.fetchedAt,
+];
+
+const buildHistoryValuesClause = (rows) => {
+  const values = [];
+  const groups = rows.map((row) => {
+    const rowValues = getHistoryRowValues(row);
+    const placeholders = rowValues.map((value, index) => {
+      values.push(value);
+      return `$${values.length}::${HISTORY_CASTS[index]}`;
+    });
+    return `(${placeholders.join(", ")})`;
+  });
+
+  return { sql: groups.join(",\n"), values };
+};
+
 const getRowValues = (row) => [
   row.server,
   row.uniqueName,
@@ -457,6 +507,45 @@ const persistRows = async (rows) => {
     }
     await client.query("COMMIT");
     return { currentRows, historyRows };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
+const persistHistoryChunk = async (client, rows) => {
+  if (rows.length === 0) return 0;
+
+  const { sql, values } = buildHistoryValuesClause(rows);
+  const columns = HISTORY_COLUMNS.join(", ");
+  const result = await client.query(
+    `INSERT INTO item_price_history (${columns})
+     VALUES ${sql}
+     ON CONFLICT (server, unique_name, enchant, city, quality, price_date)
+     DO UPDATE SET avg_price = EXCLUDED.avg_price,
+                   item_count = EXCLUDED.item_count,
+                   fetched_at = EXCLUDED.fetched_at`,
+    values
+  );
+
+  return result.rowCount;
+};
+
+const persistHistoryRows = async (rows) => {
+  if (rows.length === 0) return 0;
+
+  const client = await pool.connect();
+  let count = 0;
+
+  try {
+    await client.query("BEGIN");
+    for (let index = 0; index < rows.length; index += DATABASE_CHUNK_SIZE) {
+      count += await persistHistoryChunk(client, rows.slice(index, index + DATABASE_CHUNK_SIZE));
+    }
+    await client.query("COMMIT");
+    return count;
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -623,5 +712,6 @@ module.exports = {
     mapHistoryRows,
     normalizeHistoryDate,
     persistChunk,
+    buildHistoryValuesClause,
   },
 };

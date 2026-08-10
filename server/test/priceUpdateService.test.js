@@ -213,3 +213,24 @@ test("mapHistoryRows bỏ location/quality không hợp lệ", () => {
 
   assert.equal(rows.length, 0);
 });
+
+test("buildHistoryValuesClause tạo placeholders với cast đúng", () => {
+  const { sql, values } = _test.buildHistoryValuesClause([
+    {
+      server: "asia",
+      uniqueName: "T4_BAG",
+      enchant: 0,
+      city: "Caerleon",
+      quality: 1,
+      priceDate: "2026-07-11T00:00:00.000Z",
+      avgPrice: 3410,
+      itemCount: 13,
+      fetchedAt: "2026-08-10T00:00:00.000Z",
+    },
+  ]);
+
+  assert.equal(values.length, 9);
+  assert.match(sql, /::timestamptz/);
+  assert.match(sql, /::integer/);
+  assert.match(sql, /::bigint/);
+});
