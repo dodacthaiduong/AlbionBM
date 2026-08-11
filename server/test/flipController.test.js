@@ -22,3 +22,12 @@ test("parseTierFilter trả chuỗi CSV hoặc rỗng", () => {
   assert.equal(_test.parseTierFilter("9"), "");
   assert.equal(_test.parseTierFilter(""), "");
 });
+
+test("parseBuyCityFilter chỉ chấp nhận thành hợp lệ", () => {
+  assert.equal(_test.parseBuyCityFilter("Lymhurst"), "Lymhurst");
+  assert.equal(_test.parseBuyCityFilter("  Martlock "), "Martlock");
+  assert.equal(_test.parseBuyCityFilter("Black Market"), null);
+  assert.equal(_test.parseBuyCityFilter("Tokyo"), null);
+  assert.equal(_test.parseBuyCityFilter(""), null);
+  assert.equal(_test.parseBuyCityFilter(undefined), null);
+});

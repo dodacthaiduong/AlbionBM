@@ -85,7 +85,7 @@ const getCurrentPrices = async ({
   };
 };
 
-const buildFlipWhere = ({ server, filters = {}, tier = null, enchant = null, quality = null }) => {
+const buildFlipWhere = ({ server, filters = {}, tier = null, enchant = null, quality = null, buyCity = null }) => {
   const { conditions: itemConditions, values: itemValues } = buildMultiValueConditions(
     { ...filters, tier },
     { tableAlias: "items", startIndex: 2 }
@@ -96,11 +96,15 @@ const buildFlipWhere = ({ server, filters = {}, tier = null, enchant = null, qua
   );
   const values = [...itemValues, ...priceValues];
   const conditions = ["prices.server = $1", "prices.sell_price_min IS NOT NULL", ...itemConditions, ...priceConditions];
+  if (buyCity) {
+    values.push(buyCity);
+    conditions.push(`prices.city = $${values.length}`);
+  }
   return { whereClause: conditions.join(" AND "), values };
 };
 
-const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, quality = null }) => {
-  const { whereClause, values: filterValues } = buildFlipWhere({ server, filters, tier, enchant, quality });
+const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, quality = null, buyCity = null }) => {
+  const { whereClause, values: filterValues } = buildFlipWhere({ server, filters, tier, enchant, quality, buyCity });
   const values = [server, ...filterValues];
   const sellCity = "Black Market";
 
@@ -193,7 +197,7 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
   }));
 };
 
-const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant = null, quality = null }) => {
+const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant = null, quality = null, buyCity = null }) => {
   let targetEnchants = [1, 2, 3];
   if (enchant !== null && enchant !== "") {
     targetEnchants = String(enchant)
@@ -235,6 +239,11 @@ const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant =
     ...itemConditions,
     ...qualityConditions
   ];
+
+  if (buyCity) {
+    values.push(buyCity);
+    conditions.push(`buy.city = $${values.length}`);
+  }
 
   const whereClause = conditions.join(" AND ");
 

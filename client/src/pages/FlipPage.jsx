@@ -14,6 +14,15 @@ import { getErrorMessage } from "../utils/errors.js";
 const PAGE_SIZE = 50;
 const ENCHANT_OPTIONS = [0, 1, 2, 3, 4];
 const TIER_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8];
+const BUY_CITY_OPTIONS = [
+  "Caerleon",
+  "Bridgewatch",
+  "Martlock",
+  "Lymhurst",
+  "Fort Sterling",
+  "Thetford",
+  "Brecilien",
+];
 
 const formatPrice = (price) =>
   price === null || price === undefined
@@ -48,6 +57,7 @@ export default function FlipPage() {
   const [filters, setFilters] = useState(createEmptyShopFilters);
   const [tierFilter, setTierFilter] = useState("");
   const [enchantFilter, setEnchantFilter] = useState("");
+  const [buyCityFilter, setBuyCityFilter] = useState("");
   const [sortBy, setSortBy] = useState("profit_percent");
   const [minProfitPercent, setMinProfitPercent] = useState("");
   const [filterOptions, setFilterOptions] = useState([]);
@@ -81,6 +91,7 @@ export default function FlipPage() {
       ...filters,
       tier: tierFilter,
       enchant: enchantFilter,
+      city: buyCityFilter,
       sort: sortBy,
       minProfitPercent,
     })
@@ -101,7 +112,7 @@ export default function FlipPage() {
     return () => {
       active = false;
     };
-  }, [page, server, filters, tierFilter, enchantFilter, sortBy, minProfitPercent, refreshKey]);
+  }, [page, server, filters, tierFilter, enchantFilter, buyCityFilter, sortBy, minProfitPercent, refreshKey]);
 
   const beginReload = () => {
     setLoading(true);
@@ -140,6 +151,7 @@ export default function FlipPage() {
     setFilters(createEmptyShopFilters());
     setTierFilter("");
     setEnchantFilter("");
+    setBuyCityFilter("");
     setMinProfitPercent("");
     setPage(1);
   };
@@ -154,6 +166,7 @@ export default function FlipPage() {
     hasActiveShopFilters(filters) ||
     valueToArray(tierFilter).length > 0 ||
     valueToArray(enchantFilter).length > 0 ||
+    valueToArray(buyCityFilter).length > 0 ||
     minProfitPercent !== "";
 
   const pagination = (
@@ -241,6 +254,18 @@ export default function FlipPage() {
         hasActiveFilters={hasActiveFilters}
       >
         <div className="col-auto">
+          <label className="form-label fw-semibold mb-1">Thành mua</label>
+          <MultiSelectDropdown
+            value={buyCityFilter}
+            onChange={(csvValue) => {
+              beginReload();
+              setBuyCityFilter(csvValue);
+              setPage(1);
+            }}
+            options={BUY_CITY_OPTIONS}
+          />
+        </div>
+        <div className="col-auto">
           <label className="form-label fw-semibold mb-1">Tier</label>
           <MultiSelectDropdown
             value={tierFilter}
@@ -295,9 +320,9 @@ export default function FlipPage() {
                 <th>Enchant</th>
                 <th>Thành mua</th>
                 <th>Giá mua</th>
-                <th>Giá black market hiện tại</th>
-                <th>Giá black market TB 30 ngày</th>
-                <th>SL bán TB/ngày (Q1-5)</th>
+                <th>Giá BM hiện tại</th>
+                <th>Giá BM TB 30 ngày</th>
+                <th>SL bán TB/ngày</th>
                 <th>Lãi (đã trừ 6.5% thuế sell order)</th>
                 <th>Lời %</th>
               </tr>

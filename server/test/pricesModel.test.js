@@ -20,3 +20,18 @@ test("buildFlipWhere giữ sell_price_min IS NOT NULL", () => {
   const { whereClause } = _test.buildFlipWhere({ filters: {} });
   assert.match(whereClause, /prices\.sell_price_min IS NOT NULL/);
 });
+
+test("buildFlipWhere thêm điều kiện city khi có buyCity", () => {
+  const { whereClause, values } = _test.buildFlipWhere({
+    filters: {},
+    buyCity: "Lymhurst",
+  });
+  assert.match(whereClause, /prices\.city = \$\d/);
+  assert.ok(values.includes("Lymhurst"));
+});
+
+test("buildFlipWhere không thêm city khi buyCity null", () => {
+  const { whereClause, values } = _test.buildFlipWhere({ filters: {} });
+  assert.doesNotMatch(whereClause, /prices\.city =/);
+  assert.deepEqual(values, []);
+});
