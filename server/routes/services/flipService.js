@@ -27,6 +27,7 @@ const computeFlipOpportunities = (
       relic_price,
       shop_category,
       tier,
+      bm_sold_30d,
     } = variant;
 
     if (!sell) continue;
@@ -87,6 +88,7 @@ const computeFlipOpportunities = (
       effective_sell_price: effectiveSellPrice,
       sell_price_date: sell.sell_price_min_date,
       bm_avg_30d: variant.bm_avg_30d,
+      bm_sold_30d,
       profit,
       profit_percent: profitPercent,
     };

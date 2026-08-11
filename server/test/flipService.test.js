@@ -46,6 +46,7 @@ test("computeFlipOpportunities tính lời sau thuế và lọc flip không lờ
     sell_price: 200,
     sell_price_date: undefined,
     bm_avg_30d: 190,
+    bm_sold_30d: undefined,
     effective_sell_price: 190,
     profit: 77,
     profit_percent: 77,
@@ -196,4 +197,22 @@ test("computeFlipOpportunities trả materials array cho nâng cấp nhiều b�
   assert.equal(results[0].buy_price, 26120);
   assert.equal(results[0].base_enchant, 0);
   assert.equal(results[0].enchant, 2);
+});
+
+test("computeFlipOpportunities passes through bm_sold_30d", () => {
+  const results = computeFlipOpportunities([
+    {
+      unique_name: "T4_BAG",
+      english_name: "Bag",
+      enchant: 0,
+      quality: 1,
+      buy: { city: "Thetford", sell_price_min: 100 },
+      sell: { city: "Black Market", sell_price_min: 200 },
+      bm_avg_30d: 190,
+      bm_sold_30d: 1234.5,
+    },
+  ]);
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].bm_sold_30d, 1234.5);
 });
