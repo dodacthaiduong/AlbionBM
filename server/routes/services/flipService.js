@@ -1,6 +1,31 @@
 const DEFAULT_TAX_MULTIPLIER = 0.935;
 const DEFAULT_MIN_PROFIT = 1;
 
+const deduplicateByLowestBuyPrice = (opportunities) => {
+  const selected = new Map();
+
+  for (const opportunity of opportunities) {
+    const key = [
+      opportunity.unique_name,
+      opportunity.tier ?? "",
+      opportunity.enchant,
+      opportunity.sell_city,
+      opportunity.is_upgrade ? "upgrade" : "direct",
+      opportunity.is_upgrade ? opportunity.base_enchant : "",
+    ].join("|");
+    const current = selected.get(key);
+    const isCheaper = !current || opportunity.buy_price < current.buy_price;
+    const winsTie =
+      current &&
+      opportunity.buy_price === current.buy_price &&
+      Number(opportunity.quality) < Number(current.quality);
+
+    if (isCheaper || winsTie) selected.set(key, opportunity);
+  }
+
+  return [...selected.values()];
+};
+
 const computeFlipOpportunities = (
   variants,
   {
@@ -93,6 +118,8 @@ const computeFlipOpportunities = (
       profit_percent: profitPercent,
     };
 
+    if (tier !== undefined && tier !== null) opp.tier = tier;
+
     if (is_upgrade) {
       opp.is_upgrade = true;
       opp.base_enchant = base_enchant;
@@ -103,8 +130,9 @@ const computeFlipOpportunities = (
     opportunities.push(opp);
   }
 
-  opportunities.sort((a, b) => b.profit - a.profit);
-  return opportunities;
+  const deduplicated = deduplicateByLowestBuyPrice(opportunities);
+  deduplicated.sort((a, b) => b.profit - a.profit);
+  return deduplicated;
 };
 
-module.exports = { computeFlipOpportunities };
+module.exports = { computeFlipOpportunities, _test: { deduplicateByLowestBuyPrice } };
