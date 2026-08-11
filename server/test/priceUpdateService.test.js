@@ -7,7 +7,7 @@ process.env.ALBION_API_ASIA_URL = "https://prices.internal.example.com";
 process.env.ALBION_API_AMERICA_URL = "https://america.example.com";
 process.env.ALBION_API_EUROPE_URL = "https://europe.example.com";
 
-const { _test } = require("../services/priceUpdateService");
+const { _test } = require("../routes/services/priceUpdateService");
 
 test("generateItemEntries sinh đủ enchant từ 0 đến max_enchant", () => {
   assert.deepEqual(

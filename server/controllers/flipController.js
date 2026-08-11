@@ -1,6 +1,6 @@
-const priceUpdateService = require("../services/priceUpdateService");
+const priceUpdateService = require("../routes/services/priceUpdateService");
 const pricesModel = require("../models/pricesModel");
-const { computeFlipOpportunities } = require("../services/flipService");
+const { computeFlipOpportunities } = require("../routes/services/flipService");
 const { parseShopFilters } = require("../utils/shopFilters");
 
 const parseIntegerFilter = (value, { min, max } = {}) => {

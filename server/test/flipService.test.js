@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { computeFlipOpportunities } = require("../services/flipService");
+const { computeFlipOpportunities } = require("../routes/services/flipService");
 
 test("computeFlipOpportunities tính lời sau thuế và lọc flip không lời", () => {
   const variants = [
