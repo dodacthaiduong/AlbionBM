@@ -63,7 +63,11 @@ const computeFlipOpportunities = (
     }
 
     const sellPrice = sell.sell_price_min;
-    const revenue = Math.floor(sellPrice * taxMultiplier);
+    const effectiveSellPrice =
+      Number.isFinite(variant.bm_avg_30d) && variant.bm_avg_30d < sellPrice
+        ? variant.bm_avg_30d
+        : sellPrice;
+    const revenue = Math.floor(effectiveSellPrice * taxMultiplier);
     const profit = revenue - buyPrice;
     const profitPercent = buyPrice > 0 ? Math.round((profit / buyPrice) * 100) : 0;
 
@@ -80,6 +84,7 @@ const computeFlipOpportunities = (
       buy_price: buyPrice,
       buy_price_date: is_upgrade ? buyPriceDate : buy.sell_price_min_date,
       sell_price: sellPrice,
+      effective_sell_price: effectiveSellPrice,
       sell_price_date: sell.sell_price_min_date,
       bm_avg_30d: variant.bm_avg_30d,
       profit,
