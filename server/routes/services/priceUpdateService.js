@@ -622,6 +622,13 @@ const runPriceUpdate = async (job, lockClient) => {
 
     await runHistoryPhase(job, qualityGroups, baseUrl);
 
+    try {
+      await refreshBmSummary(job.server);
+      job.bm_summary_refreshed = true;
+    } catch (error) {
+      console.error(`[price-update:${job.id}] Rebuild BM summary thất bại:`, error.message);
+    }
+
     job.status = job.failed_batches > 0 ? "completed_with_errors" : "completed";
   } catch (error) {
     job.status = "failed";
@@ -689,6 +696,7 @@ const startPriceUpdate = async (server = "asia") => {
     failed_batches: 0,
     current_rows: 0,
     history_rows: 0,
+    bm_summary_refreshed: false,
     max_url_bytes: 0,
     errors: [],
     error_message: null,
