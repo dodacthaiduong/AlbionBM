@@ -708,11 +708,79 @@ const startPriceUpdate = async (server = "asia") => {
   return snapshotJob(job);
 };
 
+const buildBmSummarySql = (server) => `
+  INSERT INTO item_bm_30d (server, unique_name, enchant, bm_avg_30d, bm_sold_30d)
+  SELECT hist.server,
+         hist.unique_name,
+         hist.enchant,
+         hist.bm_avg_30d,
+         sold.bm_sold_30d
+  FROM (
+    SELECT server,
+           unique_name,
+           enchant,
+           AVG(avg_price)::integer AS bm_avg_30d
+    FROM item_price_history
+    WHERE city = 'Black Market'
+      AND quality = 1
+      AND avg_price IS NOT NULL
+      AND price_date >= now() - INTERVAL '30 days'
+      AND server = $1
+    GROUP BY server, unique_name, enchant
+  ) AS hist
+  LEFT JOIN (
+    SELECT server,
+           unique_name,
+           enchant,
+           AVG(daily_total) AS bm_sold_30d
+    FROM (
+      SELECT server,
+             unique_name,
+             enchant,
+             price_date,
+             SUM(item_count) AS daily_total
+      FROM item_price_history
+      WHERE city = 'Black Market'
+        AND quality BETWEEN 1 AND 5
+        AND item_count IS NOT NULL
+        AND price_date >= now() - INTERVAL '30 days'
+        AND server = $1
+      GROUP BY server, unique_name, enchant, price_date
+    ) AS daily
+    GROUP BY server, unique_name, enchant
+  ) AS sold
+    ON sold.server = hist.server
+   AND sold.unique_name = hist.unique_name
+   AND sold.enchant = hist.enchant
+`;
+
+const refreshBmSummary = async (server) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("DELETE FROM item_bm_30d WHERE server = $1", [server]);
+    await client.query(buildBmSummarySql(server), [server]);
+    const { rows } = await client.query(
+      "SELECT COUNT(*)::int AS n FROM item_bm_30d WHERE server = $1",
+      [server]
+    );
+    await client.query("COMMIT");
+    return { rows: rows[0].n };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getJob,
   getLatestJob,
   isSupportedServer,
   startPriceUpdate,
+  refreshBmSummary,
+  buildBmSummarySql,
   _test: {
     MAX_URL_BYTES,
     SERVER_BASE_URLS,
@@ -727,5 +795,6 @@ module.exports = {
     normalizeHistoryDate,
     persistChunk,
     buildHistoryValuesClause,
+    buildBmSummarySql,
   },
 };

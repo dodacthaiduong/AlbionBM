@@ -234,3 +234,15 @@ test("buildHistoryValuesClause tạo placeholders với cast đúng", () => {
   assert.match(sql, /::integer/);
   assert.match(sql, /::bigint/);
 });
+
+test("buildBmSummarySql sinh INSERT chọn BM 30 ngày từ history theo server", () => {
+  const sql = _test.buildBmSummarySql("asia");
+  assert.match(sql, /INSERT INTO item_bm_30d/);
+  assert.match(sql, /city = 'Black Market'/);
+  assert.match(sql, /quality = 1/);
+  assert.match(sql, /AVG\(avg_price\)::integer AS bm_avg_30d/);
+  assert.match(sql, /quality BETWEEN 1 AND 5/);
+  assert.match(sql, /SUM\(item_count\)/);
+  assert.match(sql, /GROUP BY server, unique_name, enchant/);
+  assert.match(sql, /\$1/);
+});
