@@ -20,6 +20,11 @@ const formatPrice = (price) =>
     ? "—"
     : new Intl.NumberFormat("en-US").format(price);
 
+const formatCount = (count) =>
+  count === null || count === undefined
+    ? "—"
+    : new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(count);
+
 const formatDate = (date) => {
   if (!date) return "—";
   const parsed = new Date(date);
@@ -292,6 +297,7 @@ export default function FlipPage() {
                 <th>Giá mua</th>
                 <th>Giá black market hiện tại</th>
                 <th>Giá black market TB 30 ngày</th>
+                <th>SL bán TB/ngày (Q1-5)</th>
                 <th>Lãi (đã trừ 6.5% thuế sell order)</th>
                 <th>Lời %</th>
               </tr>
@@ -299,13 +305,13 @@ export default function FlipPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" className="text-center text-body-secondary py-4">
+                  <td colSpan="9" className="text-center text-body-secondary py-4">
                     Đang tính cơ hội flip...
                   </td>
                 </tr>
               ) : opportunities.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="text-center text-body-secondary py-4">
+                  <td colSpan="9" className="text-center text-body-secondary py-4">
                     {hasActiveFilters
                       ? "Không có cơ hội flip phù hợp với bộ lọc hiện tại."
                       : "Chưa có cơ hội flip cho server này. Hãy cập nhật giá trước."}
@@ -355,6 +361,7 @@ export default function FlipPage() {
                       </div>
                     </td>
                     <td>{formatPrice(opportunity.bm_avg_30d)}</td>
+                    <td>{formatCount(opportunity.bm_sold_30d)}</td>
                     <td className="fw-semibold">{formatPrice(opportunity.profit)}</td>
                     <td>
                       <span className="badge text-bg-success">{opportunity.profit_percent}%</span>
