@@ -115,7 +115,8 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
             $${values.length + 1} AS sell_city,
             bm.sell_price_min AS sell_price,
             bm.sell_price_min_date AS sell_price_date,
-            hist.bm_avg_30d
+            hist.bm_avg_30d,
+            sold.bm_sold_30d
      FROM (
        SELECT DISTINCT ON (prices.unique_name, prices.enchant, prices.quality)
               prices.unique_name,
@@ -152,6 +153,29 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
        ON hist.server = buy.server
       AND hist.unique_name = buy.unique_name
       AND hist.enchant = buy.enchant
+     LEFT JOIN (
+       SELECT server,
+              unique_name,
+              enchant,
+              AVG(daily_total) AS bm_sold_30d
+       FROM (
+         SELECT server,
+                unique_name,
+                enchant,
+                price_date,
+                SUM(item_count) AS daily_total
+         FROM item_price_history
+         WHERE city = $${values.length + 1}
+           AND quality BETWEEN 1 AND 5
+           AND item_count IS NOT NULL
+           AND price_date >= now() - INTERVAL '30 days'
+         GROUP BY server, unique_name, enchant, price_date
+       ) AS daily
+       GROUP BY server, unique_name, enchant
+     ) AS sold
+       ON sold.server = buy.server
+      AND sold.unique_name = buy.unique_name
+      AND sold.enchant = buy.enchant
      WHERE bm.sell_price_min IS NOT NULL
        AND bm.city IS DISTINCT FROM buy.city`,
     [...values, sellCity]
@@ -165,6 +189,7 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
     buy: { city: row.buy_city, sell_price_min: row.buy_price, sell_price_min_date: row.buy_price_date },
     sell: { city: row.sell_city, sell_price_min: row.sell_price, sell_price_min_date: row.sell_price_date },
     bm_avg_30d: row.bm_avg_30d,
+    bm_sold_30d: row.bm_sold_30d,
   }));
 };
 
@@ -226,6 +251,7 @@ const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant =
            bm.sell_price_min AS sell_price,
            bm.sell_price_min_date AS sell_price_date,
            hist.bm_avg_30d,
+           sold.bm_sold_30d,
            items.shop_category,
            items.tier,
            rune.sell_price_min AS rune_price,
@@ -251,11 +277,34 @@ const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant =
         AND avg_price IS NOT NULL
         AND price_date >= now() - INTERVAL '30 days'
       GROUP BY server, unique_name, enchant
-    ) AS hist
-      ON hist.server = buy.server
-     AND hist.unique_name = buy.unique_name
-     AND hist.enchant = bm.enchant
-    LEFT JOIN item_prices_current AS rune
+     ) AS hist
+       ON hist.server = buy.server
+      AND hist.unique_name = buy.unique_name
+      AND hist.enchant = bm.enchant
+     LEFT JOIN (
+       SELECT server,
+              unique_name,
+              enchant,
+              AVG(daily_total) AS bm_sold_30d
+       FROM (
+         SELECT server,
+                unique_name,
+                enchant,
+                price_date,
+                SUM(item_count) AS daily_total
+         FROM item_price_history
+         WHERE city = 'Black Market'
+           AND quality BETWEEN 1 AND 5
+           AND item_count IS NOT NULL
+           AND price_date >= now() - INTERVAL '30 days'
+         GROUP BY server, unique_name, enchant, price_date
+       ) AS daily
+       GROUP BY server, unique_name, enchant
+     ) AS sold
+       ON sold.server = buy.server
+      AND sold.unique_name = buy.unique_name
+      AND sold.enchant = bm.enchant
+     LEFT JOIN item_prices_current AS rune
       ON rune.server = buy.server
      AND rune.city = buy.city
      AND rune.quality = 1
@@ -295,6 +344,7 @@ const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant =
     is_upgrade: true,
     base_enchant: row.base_enchant,
     bm_avg_30d: row.bm_avg_30d,
+    bm_sold_30d: row.bm_sold_30d,
     base_item_price: row.base_item_price,
     rune_price: row.rune_price,
     soul_price: row.soul_price,
