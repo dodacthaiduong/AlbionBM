@@ -119,8 +119,8 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
             $${values.length + 1} AS sell_city,
             bm.sell_price_min AS sell_price,
             bm.sell_price_min_date AS sell_price_date,
-            hist.bm_avg_30d,
-            sold.bm_sold_30d
+            bm30.bm_avg_30d,
+            bm30.bm_sold_30d
      FROM (
        SELECT DISTINCT ON (prices.unique_name, prices.enchant, prices.quality)
               prices.unique_name,
@@ -142,44 +142,10 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
       AND bm.enchant = buy.enchant
       AND bm.quality = 1
       AND bm.city = $${values.length + 1}
-     LEFT JOIN (
-       SELECT server,
-              unique_name,
-              enchant,
-              AVG(avg_price)::integer AS bm_avg_30d
-       FROM item_price_history
-       WHERE city = $${values.length + 1}
-         AND quality = 1
-         AND avg_price IS NOT NULL
-         AND price_date >= now() - INTERVAL '30 days'
-       GROUP BY server, unique_name, enchant
-     ) AS hist
-       ON hist.server = buy.server
-      AND hist.unique_name = buy.unique_name
-      AND hist.enchant = buy.enchant
-     LEFT JOIN (
-       SELECT server,
-              unique_name,
-              enchant,
-              AVG(daily_total) AS bm_sold_30d
-       FROM (
-         SELECT server,
-                unique_name,
-                enchant,
-                price_date,
-                SUM(item_count) AS daily_total
-         FROM item_price_history
-         WHERE city = $${values.length + 1}
-           AND quality BETWEEN 1 AND 5
-           AND item_count IS NOT NULL
-           AND price_date >= now() - INTERVAL '30 days'
-         GROUP BY server, unique_name, enchant, price_date
-       ) AS daily
-       GROUP BY server, unique_name, enchant
-     ) AS sold
-       ON sold.server = buy.server
-      AND sold.unique_name = buy.unique_name
-      AND sold.enchant = buy.enchant
+     LEFT JOIN item_bm_30d AS bm30
+       ON bm30.server = buy.server
+      AND bm30.unique_name = buy.unique_name
+      AND bm30.enchant = buy.enchant
      WHERE bm.sell_price_min IS NOT NULL
        AND bm.city IS DISTINCT FROM buy.city`,
     [...values, sellCity]
@@ -257,11 +223,11 @@ const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant =
            buy.sell_price_min AS base_item_price,
            buy.sell_price_min_date AS buy_price_date,
            'Black Market'::text AS sell_city,
-           bm.sell_price_min AS sell_price,
-           bm.sell_price_min_date AS sell_price_date,
-           hist.bm_avg_30d,
-           sold.bm_sold_30d,
-           items.shop_category,
+            bm.sell_price_min AS sell_price,
+            bm.sell_price_min_date AS sell_price_date,
+            bm30.bm_avg_30d,
+            bm30.bm_sold_30d,
+            items.shop_category,
            items.tier,
            rune.sell_price_min AS rune_price,
            soul.sell_price_min AS soul_price,
@@ -275,45 +241,11 @@ const getUpgradeFlipRows = async ({ server, filters = {}, tier = null, enchant =
      AND bm.enchant <= 3
      AND bm.quality = 1
      AND bm.city = 'Black Market'
-    LEFT JOIN (
-      SELECT server,
-             unique_name,
-             enchant,
-             AVG(avg_price)::integer AS bm_avg_30d
-      FROM item_price_history
-      WHERE city = 'Black Market'
-        AND quality = 1
-        AND avg_price IS NOT NULL
-        AND price_date >= now() - INTERVAL '30 days'
-      GROUP BY server, unique_name, enchant
-     ) AS hist
-       ON hist.server = buy.server
-      AND hist.unique_name = buy.unique_name
-      AND hist.enchant = bm.enchant
-     LEFT JOIN (
-       SELECT server,
-              unique_name,
-              enchant,
-              AVG(daily_total) AS bm_sold_30d
-       FROM (
-         SELECT server,
-                unique_name,
-                enchant,
-                price_date,
-                SUM(item_count) AS daily_total
-         FROM item_price_history
-         WHERE city = 'Black Market'
-           AND quality BETWEEN 1 AND 5
-           AND item_count IS NOT NULL
-           AND price_date >= now() - INTERVAL '30 days'
-         GROUP BY server, unique_name, enchant, price_date
-       ) AS daily
-       GROUP BY server, unique_name, enchant
-     ) AS sold
-       ON sold.server = buy.server
-      AND sold.unique_name = buy.unique_name
-      AND sold.enchant = bm.enchant
-     LEFT JOIN item_prices_current AS rune
+    LEFT JOIN item_bm_30d AS bm30
+      ON bm30.server = buy.server
+     AND bm30.unique_name = buy.unique_name
+     AND bm30.enchant = bm.enchant
+    LEFT JOIN item_prices_current AS rune
       ON rune.server = buy.server
      AND rune.city = buy.city
      AND rune.quality = 1
