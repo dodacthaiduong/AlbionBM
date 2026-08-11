@@ -1,4 +1,4 @@
-const priceUpdateService = require("../services/priceUpdateService");
+const priceUpdateService = require("../routes/services/priceUpdateService");
 const pricesModel = require("../models/pricesModel");
 const { parseShopFilters } = require("../utils/shopFilters");
 

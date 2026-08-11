@@ -1,6 +1,6 @@
-const priceUpdateService = require("../services/priceUpdateService");
+const priceUpdateService = require("../routes/services/priceUpdateService");
 const pricesModel = require("../models/pricesModel");
-const { computeFlipOpportunities } = require("../services/flipService");
+const { computeFlipOpportunities } = require("../routes/services/flipService");
 const { parseShopFilters } = require("../utils/shopFilters");
 
 const parseIntegerFilter = (value, { min, max } = {}) => {
@@ -31,6 +31,22 @@ const parseEnchantFilter = (value) => parseIntegerMulti(value, { min: 0, max: 4 
 const parseTierFilter = (value) => parseIntegerMulti(value, { min: 1, max: 8 }).join(",");
 const parseQualityFilter = (value) => parseIntegerMulti(value, { min: 1, max: 5 }).join(",");
 
+const ALLOWED_BUY_CITY_FILTERS = new Set([
+  "Caerleon",
+  "Bridgewatch",
+  "Martlock",
+  "Lymhurst",
+  "Fort Sterling",
+  "Thetford",
+  "Brecilien",
+]);
+
+const parseBuyCityFilter = (value) => {
+  if (typeof value !== "string" || value.trim() === "") return null;
+  const city = value.trim();
+  return ALLOWED_BUY_CITY_FILTERS.has(city) ? city : null;
+};
+
 const getFlipOpportunities = async (req, res) => {
   const server =
     typeof req.query.server === "string" ? req.query.server.trim().toLowerCase() : "asia";
@@ -45,6 +61,7 @@ const getFlipOpportunities = async (req, res) => {
   const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
 
   try {
+    const buyCity = parseBuyCityFilter(req.query.city);
     const [standardRows, upgradeRows] = await Promise.all([
       pricesModel.getFlipRows({
         server,
@@ -52,6 +69,7 @@ const getFlipOpportunities = async (req, res) => {
         tier: parseTierFilter(req.query.tier),
         enchant: parseEnchantFilter(req.query.enchant),
         quality: parseQualityFilter(req.query.quality),
+        buyCity,
       }),
       pricesModel.getUpgradeFlipRows({
         server,
@@ -59,6 +77,7 @@ const getFlipOpportunities = async (req, res) => {
         tier: parseTierFilter(req.query.tier),
         enchant: parseEnchantFilter(req.query.enchant),
         quality: parseQualityFilter(req.query.quality),
+        buyCity,
       }),
     ]);
     const combinedRows = [...standardRows, ...upgradeRows];
@@ -85,4 +104,7 @@ const getFlipOpportunities = async (req, res) => {
   }
 };
 
-module.exports = { getFlipOpportunities, _test: { parseIntegerMulti, parseTierFilter, parseEnchantFilter, parseQualityFilter } };
+module.exports = {
+  getFlipOpportunities,
+  _test: { parseIntegerMulti, parseTierFilter, parseEnchantFilter, parseQualityFilter, parseBuyCityFilter },
+};

@@ -55,7 +55,7 @@ const buildMultiValueConditions = (
       .map((_, index) => `$${startIndex + values.length + index}`)
       .join(",");
     values.push(...parts);
-    conditions.push(`${tableAlias}.${key} IN (${placeholders})`);
+    conditions.push(`${tableAlias}.${key}::text IN (${placeholders})`);
   }
 
   return { conditions, values };

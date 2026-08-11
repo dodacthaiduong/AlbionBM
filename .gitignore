@@ -2,3 +2,6 @@ node_modules/
 .env
 dist/
 docs/
+items.json
+items_data.tsv
+formatted_items.json

@@ -62,6 +62,49 @@ Chạy `02_load.sql` từ `psql` bằng đường dẫn tuyệt đối tới fil
 psql -d albionBM -c "\copy items (unique_name, item_type, tier, weight, shop_category, shop_subcategory1, shop_subcategory2, shop_subcategory3, item_power, attributes) FROM '/duong/dan/tuyet/doi/items_data.tsv' WITH (FORMAT text)"
 ```
 
+### Seed bảng summary BM 30 ngày
+
+Chạy một lần sau migration để nạp dữ liệu history hiện có:
+
+```sql
+INSERT INTO item_bm_30d (server, unique_name, enchant, bm_avg_30d, bm_sold_30d)
+SELECT hist.server,
+       hist.unique_name,
+       hist.enchant,
+       hist.bm_avg_30d,
+       sold.bm_sold_30d
+FROM (
+  SELECT server, unique_name, enchant,
+         AVG(avg_price)::integer AS bm_avg_30d
+  FROM item_price_history
+  WHERE city = 'Black Market'
+    AND quality = 1
+    AND avg_price IS NOT NULL
+    AND price_date >= now() - INTERVAL '30 days'
+  GROUP BY server, unique_name, enchant
+) AS hist
+LEFT JOIN (
+  SELECT server, unique_name, enchant,
+         AVG(daily_total) AS bm_sold_30d
+  FROM (
+    SELECT server, unique_name, enchant, price_date,
+           SUM(item_count) AS daily_total
+    FROM item_price_history
+    WHERE city = 'Black Market'
+      AND quality BETWEEN 1 AND 5
+      AND item_count IS NOT NULL
+      AND price_date >= now() - INTERVAL '30 days'
+    GROUP BY server, unique_name, enchant, price_date
+  ) AS daily
+  GROUP BY server, unique_name, enchant
+) AS sold
+  ON sold.server = hist.server
+ AND sold.unique_name = hist.unique_name
+ AND sold.enchant = hist.enchant;
+```
+
+Bản seed nạp cả 3 server (khác builder Task 2 chỉ nạp 1 server). Nếu muốn nạp riêng từng server, thêm `AND server = '<tên>'` vào mệnh đề `WHERE` của hai subquery `hist` và `sold` trước `GROUP BY`.
+
 ### 5. Chạy dev
 
 ```bash

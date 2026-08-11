@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { computeFlipOpportunities } = require("../services/flipService");
+const { computeFlipOpportunities } = require("../routes/services/flipService");
 
 test("computeFlipOpportunities tính lời sau thuế và lọc flip không lời", () => {
   const variants = [
@@ -46,9 +46,75 @@ test("computeFlipOpportunities tính lời sau thuế và lọc flip không lờ
     sell_price: 200,
     sell_price_date: undefined,
     bm_avg_30d: 190,
-    profit: 87,
-    profit_percent: 87,
+    bm_sold_30d: undefined,
+    effective_sell_price: 190,
+    profit: 77,
+    profit_percent: 77,
   });
+});
+
+test("computeFlipOpportunities dùng min(giá hiện tại, TB 30 ngày) để tính lãi", () => {
+  const variants = [
+    {
+      unique_name: "T4_BAG",
+      english_name: "Bag",
+      enchant: 0,
+      quality: 1,
+      buy: { city: "Thetford", sell_price_min: 100 },
+      sell: { city: "Black Market", sell_price_min: 200 },
+      bm_avg_30d: 150,
+    },
+  ];
+
+  const results = computeFlipOpportunities(variants);
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].sell_price, 200);
+  assert.equal(results[0].effective_sell_price, 150);
+  // revenue = floor(150 * 0.935) = 140; profit = 140 - 100 = 40
+  assert.equal(results[0].profit, 40);
+  assert.equal(results[0].profit_percent, 40);
+});
+
+test("computeFlipOpportunities giữ giá hiện tại khi TB 30 ngày cao hơn", () => {
+  const variants = [
+    {
+      unique_name: "T4_BAG",
+      english_name: "Bag",
+      enchant: 0,
+      quality: 1,
+      buy: { city: "Thetford", sell_price_min: 100 },
+      sell: { city: "Black Market", sell_price_min: 200 },
+      bm_avg_30d: 250,
+    },
+  ];
+
+  const results = computeFlipOpportunities(variants);
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].effective_sell_price, 200);
+  // revenue = floor(200 * 0.935) = 187; profit = 187 - 100 = 87
+  assert.equal(results[0].profit, 87);
+});
+
+test("computeFlipOpportunities dùng giá hiện tại khi thiếu TB 30 ngày", () => {
+  const variants = [
+    {
+      unique_name: "T4_BAG",
+      english_name: "Bag",
+      enchant: 0,
+      quality: 1,
+      buy: { city: "Thetford", sell_price_min: 100 },
+      sell: { city: "Black Market", sell_price_min: 200 },
+      bm_avg_30d: null,
+    },
+  ];
+
+  const results = computeFlipOpportunities(variants);
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].effective_sell_price, 200);
+  assert.equal(results[0].profit, 87);
 });
 
 test("computeFlipOpportunities tính cơ hội nâng cấp nhiều bậc và áp dụng số lượng nguyên liệu chuẩn", () => {
@@ -131,4 +197,107 @@ test("computeFlipOpportunities trả materials array cho nâng cấp nhiều b�
   assert.equal(results[0].buy_price, 26120);
   assert.equal(results[0].base_enchant, 0);
   assert.equal(results[0].enchant, 2);
+});
+
+test("computeFlipOpportunities passes through bm_sold_30d", () => {
+  const results = computeFlipOpportunities([
+    {
+      unique_name: "T4_BAG",
+      english_name: "Bag",
+      enchant: 0,
+      quality: 1,
+      buy: { city: "Thetford", sell_price_min: 100 },
+      sell: { city: "Black Market", sell_price_min: 200 },
+      bm_avg_30d: 190,
+      bm_sold_30d: 1234.5,
+    },
+  ]);
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].bm_sold_30d, 1234.5);
+});
+
+test("computeFlipOpportunities giữ một row direct có giá mua thấp nhất giữa các quality", () => {
+  const results = computeFlipOpportunities([
+    {
+      unique_name: "T4_BAG",
+      english_name: "Bag",
+      tier: 4,
+      enchant: 0,
+      quality: 1,
+      buy: { city: "Thetford", sell_price_min: 140 },
+      sell: { city: "Black Market", sell_price_min: 200 },
+    },
+    {
+      unique_name: "T4_BAG",
+      english_name: "Bag",
+      tier: 4,
+      enchant: 0,
+      quality: 3,
+      buy: { city: "Thetford", sell_price_min: 100 },
+      sell: { city: "Black Market", sell_price_min: 200 },
+    },
+  ]);
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].quality, 3);
+  assert.equal(results[0].buy_price, 100);
+});
+
+test("computeFlipOpportunities không gộp direct với upgrade dù cùng item và enchant", () => {
+  const results = computeFlipOpportunities([
+    {
+      unique_name: "T4_BAG",
+      english_name: "Bag",
+      tier: 4,
+      enchant: 1,
+      quality: 1,
+      buy: { city: "Thetford", sell_price_min: 100 },
+      sell: { city: "Black Market", sell_price_min: 300 },
+    },
+    {
+      unique_name: "T4_BAG",
+      english_name: "Bag",
+      tier: 4,
+      enchant: 1,
+      quality: 3,
+      buy: { city: "Thetford", sell_price_min: 1, sell_price_min_date: "2026-08-11T00:00:00Z" },
+      sell: { city: "Black Market", sell_price_min: 300 },
+      is_upgrade: true,
+      base_enchant: 0,
+      base_item_price: 1,
+      rune_price: 1,
+      shop_category: "bags",
+    },
+  ]);
+
+  assert.equal(results.length, 2);
+  assert.equal(results.filter((result) => result.is_upgrade).length, 1);
+  assert.equal(results.filter((result) => !result.is_upgrade).length, 1);
+});
+
+test("computeFlipOpportunities giữ quality thấp hơn khi giá mua bằng nhau", () => {
+  const results = computeFlipOpportunities([
+    {
+      unique_name: "T4_BAG",
+      english_name: "Bag",
+      tier: 4,
+      enchant: 0,
+      quality: 3,
+      buy: { city: "Thetford", sell_price_min: 100 },
+      sell: { city: "Black Market", sell_price_min: 200 },
+    },
+    {
+      unique_name: "T4_BAG",
+      english_name: "Bag",
+      tier: 4,
+      enchant: 0,
+      quality: 1,
+      buy: { city: "Thetford", sell_price_min: 100 },
+      sell: { city: "Black Market", sell_price_min: 200 },
+    },
+  ]);
+
+  assert.equal(results.length, 1);
+  assert.equal(results[0].quality, 1);
 });
