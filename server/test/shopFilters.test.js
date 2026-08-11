@@ -24,8 +24,8 @@ test("buildMultiValueConditions tạo IN cho nhiều trường", () => {
   const { conditions, values } = buildMultiValueConditions(filters, {
     startIndex: 2,
   });
-  assert.equal(conditions[0], "items.shop_category IN ($2,$3)");
-  assert.equal(conditions[1], "items.tier IN ($4,$5,$6)");
+  assert.equal(conditions[0], "items.shop_category::text IN ($2,$3)");
+  assert.equal(conditions[1], "items.tier::text IN ($4,$5,$6)");
   assert.deepEqual(values, ["Weapon", "Armor", "4", "5", "6"]);
 });
 

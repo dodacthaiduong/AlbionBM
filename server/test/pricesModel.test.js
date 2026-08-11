@@ -10,9 +10,9 @@ test("buildFlipWhere kết hợp IN cho shop và tier/enchant/quality", () => {
     quality: "1,2",
   });
   assert.match(whereClause, /prices\.server = \$1/);
-  assert.match(whereClause, /items\.shop_category IN \(\$2,\$3\)/);
-  assert.match(whereClause, /items\.tier IN \(\$4,\$5\)/);
-  assert.match(whereClause, /prices\.quality IN \(\$6,\$7\)/);
+  assert.match(whereClause, /items\.shop_category::text IN \(\$2,\$3\)/);
+  assert.match(whereClause, /items\.tier::text IN \(\$4,\$5\)/);
+  assert.match(whereClause, /prices\.quality::text IN \(\$6,\$7\)/);
   assert.deepEqual(values, ["Weapon", "Armor", "4", "5", "1", "2"]);
 });
 
@@ -26,8 +26,20 @@ test("buildFlipWhere thêm điều kiện city khi có buyCity", () => {
     filters: {},
     buyCity: "Lymhurst",
   });
-  assert.match(whereClause, /prices\.city = \$\d/);
+  assert.match(whereClause, /prices\.city = \$2/);
   assert.ok(values.includes("Lymhurst"));
+});
+
+test("buildFlipWhere buyCity không trùng placeholder với tier/enchant", () => {
+  const { whereClause, values } = _test.buildFlipWhere({
+    filters: {},
+    tier: "8,7,6",
+    enchant: "0,1",
+    buyCity: "Brecilien",
+  });
+  assert.match(whereClause, /prices\.enchant::text IN \(\$5,\$6\)/);
+  assert.match(whereClause, /prices\.city = \$7/);
+  assert.deepEqual(values, ["8", "7", "6", "0", "1", "Brecilien"]);
 });
 
 test("buildFlipWhere không thêm city khi buyCity null", () => {

@@ -98,7 +98,7 @@ const buildFlipWhere = ({ server, filters = {}, tier = null, enchant = null, qua
   const conditions = ["prices.server = $1", "prices.sell_price_min IS NOT NULL", ...itemConditions, ...priceConditions];
   if (buyCity) {
     values.push(buyCity);
-    conditions.push(`prices.city = $${values.length}`);
+    conditions.push(`prices.city = $${values.length + 1}`);
   }
   return { whereClause: conditions.join(" AND "), values };
 };
@@ -116,7 +116,7 @@ const getFlipRows = async ({ server, filters = {}, tier = null, enchant = null, 
             buy.city AS buy_city,
             buy.buy_price,
             buy.buy_price_date,
-            $${values.length + 1} AS sell_city,
+            $${values.length + 1}::text AS sell_city,
             bm.sell_price_min AS sell_price,
             bm.sell_price_min_date AS sell_price_date,
             bm30.bm_avg_30d,
