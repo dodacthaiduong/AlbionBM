@@ -52,6 +52,7 @@ const computeCraftProfits = (rows, { minProfitPercent = 0 } = {}) => {
       total_material_cost: totalMaterialCost,
       silver_cost: silverCost,
       total_cost: totalCost,
+      sell_price: row.current_bm_price,
       effective_sell_price: effectiveSellPrice,
       revenue,
       profit,
