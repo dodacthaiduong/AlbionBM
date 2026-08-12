@@ -29,18 +29,18 @@ describe("computeCraftProfits", () => {
     // silver = 500*40 = 20000
     // total_cost = 156800+20000 = 176800
     // effective_sell = min(50000,52000)*0.935 = 46750
-    // revenue = floor(46750) = 46750
-    // profit = 46750 - 176800 = -130050
+    // revenue = floor(46750 * 40) = 1870000
+    // profit = 1870000 - 176800 = 1693200
     assert.strictEqual(results.length, 1);
     assert.strictEqual(results[0].total_material_cost, 156800);
     assert.strictEqual(results[0].silver_cost, 20000);
     assert.strictEqual(results[0].total_cost, 176800);
-    assert.strictEqual(results[0].revenue, 46750);
-    assert.strictEqual(results[0].profit, -130050);
+    assert.strictEqual(results[0].revenue, 1870000);
+    assert.strictEqual(results[0].profit, 1693200);
   });
 
   it("should filter by minProfitPercent", () => {
-    const results = computeCraftProfits(sampleRows, { minProfitPercent: 10 });
+    const results = computeCraftProfits(sampleRows, { minProfitPercent: 1000 });
     assert.strictEqual(results.length, 0);
   });
 

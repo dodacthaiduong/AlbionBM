@@ -29,7 +29,7 @@ const computeCraftProfits = (rows, { minProfitPercent = 0 } = {}) => {
       ? row.current_bm_price
       : row.bm_avg_30d;
 
-    const revenue = Math.floor(effectiveSellPrice * TAX_MULTIPLIER);
+    const revenue = Math.floor(effectiveSellPrice * BATCH_SIZE * TAX_MULTIPLIER);
     const profit = revenue - totalCost;
     const profitPercent = totalCost > 0 ? Math.round((profit / totalCost) * 100) : 0;
 
