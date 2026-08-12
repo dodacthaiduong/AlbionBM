@@ -1,6 +1,7 @@
 import { createBrowserRouter, RouterProvider, NavLink, Outlet, Navigate } from "react-router-dom";
 import HomePage from "./pages/HomePage";
 import FlipPage from "./pages/FlipPage";
+import CraftPage from "./pages/CraftPage";
 
 function Layout() {
   return (
@@ -43,6 +44,16 @@ function Layout() {
                   Flip
                 </NavLink>
               </li>
+              <li className="nav-item">
+                <NavLink
+                  to="/craft"
+                  className={({ isActive }) =>
+                    `nav-link${isActive ? " active" : ""}`
+                  }
+                >
+                  Craft
+                </NavLink>
+              </li>
             </ul>
           </div>
         </div>
@@ -65,6 +76,7 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/price" replace /> },
       { path: "price", element: <HomePage /> },
       { path: "flip", element: <FlipPage /> },
+      { path: "craft", element: <CraftPage /> },
     ],
   },
 ]);
