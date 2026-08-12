@@ -42,7 +42,7 @@ const parseMultiValue = (value) => {
 
 const buildMultiValueConditions = (
   filters = {},
-  { tableAlias = "items", startIndex = 1 } = {}
+  { tableAlias = "items", startIndex = 1, columnOverrides = {} } = {}
 ) => {
   const values = [];
   const conditions = [];
@@ -55,7 +55,8 @@ const buildMultiValueConditions = (
       .map((_, index) => `$${startIndex + values.length + index}`)
       .join(",");
     values.push(...parts);
-    conditions.push(`${tableAlias}.${key}::text IN (${placeholders})`);
+    const column = columnOverrides[key] || `${tableAlias}.${key}`;
+    conditions.push(`${column}::text IN (${placeholders})`);
   }
 
   return { conditions, values };

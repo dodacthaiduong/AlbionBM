@@ -254,8 +254,8 @@ export default function CraftPage() {
                       <div style={{ fontSize: "11px" }}>
                         {opp.materials.map((mat) => (
                           <div key={mat.material_unique_name}>
-                            {mat.material_name}: {mat.count * 40} → mất {mat.count * 40 - Math.floor(mat.count * 40 * 0.248)}
-                            <span className="text-body-secondary"> (hoàn {Math.floor(mat.count * 40 * 0.248)})</span>
+                            {mat.material_name}: {mat.count * 40} × {formatPrice(mat.price)} = {formatPrice(mat.count * 40 * mat.price)}
+                            <span className="text-body-secondary"> dùng {mat.count * 40 - Math.floor(mat.count * 40 * 0.248)} (hoàn {Math.floor(mat.count * 40 * 0.248)})</span>
                           </div>
                         ))}
                       </div>

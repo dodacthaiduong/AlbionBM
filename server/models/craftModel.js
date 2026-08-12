@@ -42,7 +42,7 @@ const getCraftData = async ({ server, filters = {}, tier = null, enchant = null 
   const { conditions: filterConditions, values: filterValues } =
     buildMultiValueConditions(
       { ...filters, tier, enchant },
-      { tableAlias: "items", startIndex: 2 }
+      { tableAlias: "items", startIndex: 2, columnOverrides: { enchant: "r.enchant_level" } }
     );
 
   const values = [server, ...filterValues];
