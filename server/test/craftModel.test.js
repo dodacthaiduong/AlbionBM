@@ -1,5 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const pool = require("../config/db");
+const craftModel = require("../models/craftModel");
 const { _test } = require("../models/craftModel");
 
 const { getPreferredCity, getBestPrice } = _test;
@@ -48,4 +50,57 @@ test("getBestPrice retorna null quando não há preços válidos", () => {
     getBestPrice([{ unique_name: "T4_CLOTH", city: "Lymhurst", sell_price_min: null }], "T4_CLOTH"),
     null
   );
+});
+
+test("getCraftData retorna vazio quando nenhuma receita encontrada", async (t) => {
+  t.mock.method(pool, "query", async () => ({ rows: [] }));
+
+  const result = await craftModel.getCraftData({ server: "asia" });
+
+  assert.deepStrictEqual(result, { rows: [], total: 0 });
+  assert.strictEqual(pool.query.mock.callCount(), 1);
+});
+
+test("getCraftData retorna receitas com materiais e precos via getBestPrice", async (t) => {
+  const recipeRows = [
+    {
+      item_unique_name: "T4_HEAD_CLOTH_SET1",
+      enchant_level: 0,
+      craft_time: 1.5,
+      silver: 500,
+      crafting_focus: 429,
+      bm_avg_30d: 50000,
+      bm_sold_30d: 100.5,
+      current_bm_price: 52000,
+    },
+  ];
+  const materialRows = [
+    {
+      item_unique_name: "T4_HEAD_CLOTH_SET1",
+      enchant_level: 0,
+      material_unique_name: "T4_CLOTH",
+      count: 8,
+      material_name: "T4 Cloth",
+    },
+  ];
+  const priceRows = [
+    { unique_name: "T4_CLOTH", city: "Lymhurst", sell_price_min: 500 },
+    { unique_name: "T4_CLOTH", city: "Thetford", sell_price_min: 550 },
+  ];
+
+  t.mock.method(pool, "query", async (queryText) => {
+    if (queryText.includes("crafting_recipes")) return { rows: recipeRows };
+    if (queryText.includes("crafting_recipe_materials")) return { rows: materialRows };
+    return { rows: priceRows };
+  });
+
+  const result = await craftModel.getCraftData({ server: "asia" });
+
+  assert.strictEqual(result.rows.length, 1);
+  assert.strictEqual(result.rows[0].item_unique_name, "T4_HEAD_CLOTH_SET1");
+  assert.strictEqual(result.rows[0].materials.length, 1);
+  assert.strictEqual(result.rows[0].materials[0].material_unique_name, "T4_CLOTH");
+  assert.strictEqual(result.rows[0].materials[0].count, 8);
+  assert.strictEqual(result.rows[0].materials[0].price, 500);
+  assert.strictEqual(result.total, 1);
 });

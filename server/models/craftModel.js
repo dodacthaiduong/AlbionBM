@@ -1,6 +1,6 @@
 const pool = require("../config/db");
 const { escapeLiteral } = require("pg");
-const { buildShopFilterConditions, buildMultiValueConditions } = require("../utils/shopFilters");
+const { buildMultiValueConditions } = require("../utils/shopFilters");
 
 const PREFERRED_CITIES = {
   METALBAR: "Thetford",
