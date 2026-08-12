@@ -8,6 +8,8 @@ process.env.ALBION_API_AMERICA_URL = "https://america.example.com";
 process.env.ALBION_API_EUROPE_URL = "https://europe.example.com";
 
 const { getCraftOpportunities, _test } = require("../controllers/craftController");
+const craftModel = require("../models/craftModel");
+const priceUpdateService = require("../routes/services/priceUpdateService");
 
 test("getCraftOpportunities trả về 400 cho server không hợp lệ", async () => {
   const req = { query: { server: "mars" } };
@@ -43,4 +45,54 @@ test("parseIntegerFilter trả null cho input không hợp lệ", () => {
   assert.equal(_test.parseIntegerFilter(undefined), null);
   assert.equal(_test.parseIntegerFilter("10", { min: 0 }), 10);
   assert.equal(_test.parseIntegerFilter("5", { min: 0, max: 10 }), 5);
+});
+
+test("getCraftOpportunities trả về response shape đúng khi thành công", async (t) => {
+  t.mock.method(priceUpdateService, "isSupportedServer", () => true);
+  t.mock.method(craftModel, "getCraftData", () => ({
+    rows: [
+      {
+        item_unique_name: "T4_BAG",
+        english_name: "Bag",
+        enchant_level: 0,
+        tier: 4,
+        craft_time: 10,
+        silver: 100,
+        shop_category: "Equipment",
+        shop_subcategory1: "Bag",
+        shop_subcategory2: null,
+        shop_subcategory3: null,
+        bm_avg_30d: 5000,
+        bm_sold_30d: 10,
+        current_bm_price: 5000,
+        materials: [{ price: 100, count: 5 }],
+      },
+    ],
+    total: 1,
+  }));
+
+  const req = { query: { server: "asia" } };
+  let result;
+  const res = {
+    status: (code) => ({
+      json: (data) => {
+        result = { statusCode: code, body: data };
+        return result;
+      },
+    }),
+    json: (data) => {
+      result = { statusCode: 200, body: data };
+      return result;
+    },
+  };
+
+  await getCraftOpportunities(req, res);
+
+  assert.equal(result.statusCode, 200);
+  assert.ok(Array.isArray(result.body.data));
+  assert.equal(result.body.data.length, 1);
+  assert.equal(result.body.total, 1);
+  assert.equal(result.body.page, 1);
+  assert.equal(result.body.limit, 50);
+  assert.equal(result.body.totalPages, 1);
 });

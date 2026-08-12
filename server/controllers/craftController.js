@@ -51,7 +51,7 @@ const getCraftOpportunities = async (req, res) => {
       enchant: parseEnchantFilter(req.query.enchant),
     });
 
-    let opportunities = computeCraftProfits(rows, {
+    const opportunities = computeCraftProfits(rows, {
       minProfitPercent: parseIntegerFilter(req.query.minProfitPercent, { min: 0 }) ?? 0,
     });
 
