@@ -55,3 +55,15 @@ export const getFlipOpportunities = async (
   });
   return res.data;
 };
+
+export const getCraftOpportunities = async (
+  page = 1,
+  limit = 50,
+  server = "asia",
+  filters = {}
+) => {
+  const res = await api.get("/craft", {
+    params: { page, limit, server, ...filters },
+  });
+  return res.data;
+};
